@@ -8,12 +8,15 @@
 user = 'wandell';
 host = 'orange.stanford.edu';
 
-% Look in the metadata directory on orang
+%  MORE TO COME AS THE PAPER EVOLVES
+% Look in the metadata directory on orange
+%
 % Prepare the local directory
 imageID = '1114011756';
 % 1114091636 - People on street
 % 1114011756 - Vans moving away, person
 % 1113094429
+%
 
 lgt = {'headlights','streetlights','otherlights','skymap'};
 destPath = fullfile(isethdrsensorRootPath,'data',imageID);
