@@ -43,10 +43,11 @@ scene.metadata.wgts = wgts;
 
 %% Denoise and show
 scene = piAIdenoise(scene);
-% sceneWindow(scene);
-
-scene = sceneSet(scene,'render flag','hdr');
-scene = sceneSet(scene,'gamma',1);
+%{
+ sceneWindow(scene);
+ scene = sceneSet(scene,'render flag','hdr');
+ scene = sceneSet(scene,'gamma',1);
+%}
 
 %{
  lum = sceneGet(scene,'luminance');
@@ -79,12 +80,11 @@ sceneWindow(thisScene);
 %% We could convert the scene via wvf in various ways
 
 [oi,wvf] = oiCreate('wvf');
-oi = oiSet(oi,'wvf zcoeffs',3,'defocus');
-
 [aperture, params] = wvfAperture(wvf,'nsides',3,...
     'dot mean',50, 'dot sd',20, 'dot opacity',0.5,'dot radius',5,...
     'line mean',50, 'line sd', 20, 'line opacity',0.5,'linewidth',2);
 
+oi = oiSet(oi,'wvf zcoeffs',0,'defocus');
 oi = oiCompute(oi, thisScene,'aperture',aperture,'crop',true);
 %{
 oiWindow(oi);
