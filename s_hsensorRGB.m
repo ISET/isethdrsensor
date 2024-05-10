@@ -14,7 +14,11 @@
 %%
 ieInit;
 
-%%
+%%  Specify the file
+
+
+% Use the script s_downloadLightGroup to add to this list
+
 imageID = '1114011756';
 % 1114091636 - People on street
 % 1114011756 - Vans moving away, person
@@ -79,6 +83,9 @@ sceneWindow(thisScene);
 
 %% We could convert the scene via wvf in various ways
 
+if ~exist('thisScene','var'), thisScene = scene; end
+ieAddObject(thisScene);
+
 [oi,wvf] = oiCreate('wvf');
 [aperture, params] = wvfAperture(wvf,'nsides',3,...
     'dot mean',50, 'dot sd',20, 'dot opacity',0.5,'dot radius',5,...
@@ -94,16 +101,31 @@ oi = oiSet(oi,'gamma',1);
 
 %%  Create the ip and the default ISETAuto sensor
 
-[ip, sensor] = piRadiance2RGB(oi,'etime',1/7,'analoggain',1/10,'quantization','12bit');
+exrDir = fullfile(isethdrsensorRootPath,'local','exr',string(datetime('today')));
+if ~exist(exrDir,'dir'), mkdir(exrDir); end
+
+% Note the hour and time
+[HH,mm] = hms(datetime('now')); 
+
+[ip, sensor] = piRadiance2RGB(oi,'etime',1/60,'analoggain',1/10,'quantization','12bit');
 ipWindow(ip);
+
+%% Save sensor data in EXR file
+rgbName = sprintf('%02dH%02dS-RGB-%.2f.exr',uint8(HH),uint8(mm),sensorGet(sensor,'exp time','ms'));
+sensor2EXR(sensor,fullfile(exrDir,rgbName))
 
 %% Turn off the noise and recompute
 
 sensor = sensorSet(sensor,'noiseFlag',0);
 sensor = sensorSet(sensor,'name','noise free');
 sensor = sensorCompute(sensor,oi);
+
 ip = ipCompute(ip,sensor);
 ipWindow(ip);
+
+%%
+rgbName = sprintf('%02dH%02dS-RGB-NoNoise-%.2f.exr',uint8(HH),uint8(mm),sensorGet(sensor,'exp time','ms'));
+sensor2EXR(sensor,fullfile(exrDir,rgbName))
 
 %%  Use the RGBW sensor
 
@@ -117,9 +139,14 @@ cond(qe)
 %}
 
 expDuration = [1/15, 1/30, 1/60];
+fname = cell(numel(expDuration),1);
+
 for dd = 1:numel(expDuration)
     sensorRGBW = sensorSet(sensorRGBW,'exp time',expDuration(dd));
-    sensorRGBW = sensorCompute(sensorRGBW,oi);
+    sensorRGBW = sensorCompute(sensorRGBW,oi);    
+    fname{dd} = sprintf('%02dH%02dS-RGBW-%.2f.exr',uint8(HH),uint8(mm),sensorGet(sensorRGBW,'exp time','ms'));
+    sensor2EXR(sensorRGBW,fullfile(exrDir,fname{dd}));
+
     ip = ipCompute(ip,sensorRGBW);  % It would be nice to not have to run the whole thing
     ip = ipSet(ip,'transform method','adaptive');
     ip = ipSet(ip,'demosaic method','bilinear');
