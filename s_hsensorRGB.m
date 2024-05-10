@@ -147,7 +147,7 @@ for dd = 1:numel(expDuration)
     sensorRGBW = sensorSet(sensorRGBW,'exp time',expDuration(dd));
     sensorRGBW = sensorCompute(sensorRGBW,oi);    
     fname{dd} = sprintf('%02dH%02dS-RGBW-%.2f.exr',uint8(HH),uint8(mm),sensorGet(sensorRGBW,'exp time','ms'));
-    sensor2EXR(sensorRGBW,fullfile(exrDir,fname{dd}));
+    fname = sensor2EXR(sensorRGBW,fullfile(exrDir,fname{dd}));
 
     ip = ipCompute(ip,sensorRGBW);  % It would be nice to not have to run the whole thing
     ip = ipSet(ip,'transform method','adaptive');
