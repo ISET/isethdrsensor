@@ -46,7 +46,6 @@ scene = sceneAdd(scenes, wgts);
 scene.metadata.wgts = wgts;
 
 %% Denoise and show
-scene = piAIdenoise(scene);
 %{
  sceneWindow(scene);
  scene = sceneSet(scene,'render flag','hdr');
@@ -66,10 +65,12 @@ scene = piAIdenoise(scene);
 %
 % TODO:  Add crop to the scene window pull down.
 %
+
+form = [1 1 511 511];
 switch imageID
     case '1114011756'
         % Focused on the person
-        rect = [659   349   934   487];  % 1114011756
+        rect = [890   370 0 0] + form;  % 1114011756
         thisScene = sceneCrop(scene,rect);
     case '1114091636'
         % This is an example crop for the headlights on the green car.
@@ -79,13 +80,14 @@ switch imageID
         error('Unknown imageID')
 end
 
+%% We could convert the scene via wvf in various ways
+if ~exist('thisScene','var'), thisScene = scene; end
+
+thisScene = piAIdenoise(thisScene);
+ieAddObject(thisScene);
 sceneWindow(thisScene);
 
-%% We could convert the scene via wvf in various ways
-
-if ~exist('thisScene','var'), thisScene = scene; end
-ieAddObject(thisScene);
-
+%%
 [oi,wvf] = oiCreate('wvf');
 [aperture, params] = wvfAperture(wvf,'nsides',3,...
     'dot mean',50, 'dot sd',20, 'dot opacity',0.5,'dot radius',5,...
