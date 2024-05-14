@@ -84,7 +84,6 @@ end
 if ~exist('thisScene','var'), thisScene = scene; end
 
 thisScene = piAIdenoise(thisScene);
-ieAddObject(thisScene);
 sceneWindow(thisScene);
 
 %%
@@ -129,7 +128,7 @@ ipWindow(ip);
 rgbName = sprintf('%02dH%02dS-RGB-NoNoise-%.2f.exr',uint8(HH),uint8(mm),sensorGet(sensor,'exp time','ms'));
 sensor2EXR(sensor,fullfile(exrDir,rgbName))
 
-%%  Use the RGBW sensor
+%%  Use the RGBW sensor and demosaic with ISETCam (ip)
 
 sensorRGBW = sensorCreate('rgbw');
 sensorRGBW = sensorSet(sensorRGBW,'match oi',oi);
@@ -146,12 +145,13 @@ fname = cell(numel(expDuration),1);
 for dd = 1:numel(expDuration)
     sensorRGBW = sensorSet(sensorRGBW,'exp time',expDuration(dd));
     sensorRGBW = sensorCompute(sensorRGBW,oi);    
-    fname{dd} = sprintf('%02dH%02dS-RGBW-%.2f.exr',uint8(HH),uint8(mm),sensorGet(sensorRGBW,'exp time','ms'));
-    fname = sensor2EXR(sensorRGBW,fullfile(exrDir,fname{dd}));
+    fname{dd}  = sprintf('%02dH%02dS-RGBW-%.2f.exr',uint8(HH),uint8(mm),sensorGet(sensorRGBW,'exp time','ms'));
+    fname{dd}  = sensor2EXR(sensorRGBW,fullfile(exrDir,fname{dd}));
 
     ip = ipCompute(ip,sensorRGBW);  % It would be nice to not have to run the whole thing
     ip = ipSet(ip,'transform method','adaptive');
     ip = ipSet(ip,'demosaic method','bilinear');
+    
     illE = sceneGet(scene,'illuminant energy');
     ip = ipSet(ip,'render whitept',illE, sensorRGBW);
     ip = ipCompute(ip,sensorRGBW);
@@ -159,4 +159,38 @@ for dd = 1:numel(expDuration)
     ipWindow(ip);
 end
 
+%% Demosaic the RGBW using the trained Restormer network
+
+% We assume you have the python miniconda environment running
+% See s_python
+%
+% pyenv('Version','/opt/miniconda3/envs/py39/bin/python');
+%
+% You can check whether it is up by running
+%
+%   pyversion
+%
+
+% Run demosaic on each of the sensor EXR files. Write them out to a
+% corresponding ipEXR file.
+ipEXR = cell(1,numel(expDuration));
+for ii=1:numel(expDuration)
+    [p,n,ext] = fileparts(fname{ii});
+    ipEXR{ii} = sprintf('%s-ip%s',fullfile(p,n),ext);
+    isetDemosaicNN('rgbw', fname{ii}, ipEXR{ii});
+end
+
 %%
+
+ip = ipCreate;
+for ii=1:numel(ipEXR)
+    img = exrread(ipEXR{ii});
+    ip = ipSet(ip,'display linear rgb',img);
+    ip = ipSet(ip','name',ipEXR{ii});
+    ipWindow(ip);
+    img = img/max(img(:));
+    img = lin2rgb(img/max(img(:)));
+    ieNewGraphWin; imshow(img);
+end
+
+

@@ -7,14 +7,10 @@ packaging
 pluggy
 protobuf
 pyexr
-pytorch
+torch
 pyyaml
 setuptools
-sqlite
-tomli
 torchvision
 tqdm
-typing_extensions
-yaml
-zlib
-zstd
+
+
