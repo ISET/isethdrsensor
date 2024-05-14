@@ -19,7 +19,7 @@ ieInit;
 
 % Use the script s_downloadLightGroup to add to this list
 
-imageID = '1114011756';
+imageID = '1114091636';
 % 1114091636 - People on street
 % 1114011756 - Vans moving away, person
 % 1113094429
@@ -130,7 +130,7 @@ sensor2EXR(sensor,fullfile(exrDir,rgbName))
 
 %%  Use the RGBW sensor and demosaic with ISETCam (ip)
 
-sensorRGBW = sensorCreate('rgbw');
+sensorRGBW = sensorCreate('ar0132at',[],'rgbw');
 sensorRGBW = sensorSet(sensorRGBW,'match oi',oi);
 sensorRGBW = sensorSet(sensorRGBW,'name','rgbw');
 
@@ -151,7 +151,7 @@ for dd = 1:numel(expDuration)
     ip = ipCompute(ip,sensorRGBW);  % It would be nice to not have to run the whole thing
     ip = ipSet(ip,'transform method','adaptive');
     ip = ipSet(ip,'demosaic method','bilinear');
-    
+
     illE = sceneGet(scene,'illuminant energy');
     ip = ipSet(ip,'render whitept',illE, sensorRGBW);
     ip = ipCompute(ip,sensorRGBW);
