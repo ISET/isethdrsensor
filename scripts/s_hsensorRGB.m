@@ -142,16 +142,6 @@ for dd = 1:numel(expDuration)
     sensorRGBW = sensorCompute(sensorRGBW,oi);    
     fname{dd}  = sprintf('%02dH%02dS-RGBW-%.2f.exr',uint8(HH),uint8(mm),sensorGet(sensorRGBW,'exp time','ms'));
     fname{dd}  = sensor2EXR(sensorRGBW,fullfile(exrDir,fname{dd}));
-
-    % ip = ipCompute(ip,sensorRGBW);  % It would be nice to not have to run the whole thing
-    % ip = ipSet(ip,'transform method','adaptive');
-    % ip = ipSet(ip,'demosaic method','bilinear');
-    %
-    % illE = sceneGet(scene,'illuminant energy');
-    % ip = ipSet(ip,'render whitept',illE, sensorRGBW);
-    % ip = ipCompute(ip,sensorRGBW);
-    % ip = ipSet(ip,'name',sprintf('RGBW-%.3f',expDuration(dd)));
-    % ipWindow(ip);
 end
 
 %% Demosaic the RGBW using the trained Restormer network
@@ -177,27 +167,17 @@ end
 
 %% Find the combined transform for the RGB sensors
 
-% We should be able to find T a simpler way and embed that into the
-% 'transform method','rgbw restormer'
-sensorRGB = sensorCreate('ar0132at',[],'rgb');
-sensorRGB = sensorSet(sensorRGB,'match oi',oi);
-sensorRGB = sensorSet(sensorRGB,'name','rgb');
-sensorRGB = sensorCompute(sensorRGB,oi);
 ip = ipCreate;
-ip = ipCompute(ip,sensorRGB);
-T = ipGet(ip,'transforms');
 
+% We should be able to find T a simpler way and embed that into the
+% 'transform method','rgbw restormer'.  Here we set the noise to zero
+% because it appears that T depends on the data in some way.
+sensorRGB = sensorCreate('ar0132at',[],'rgb');
+sensorRGB = sensorSet(sensorRGB,'noise flag',0);
+sensorRGB = sensorCompute(sensorRGB,oi);
+ip = ipCompute(ip,sensorRGB);  % Computes the Transforms
 
-% sensorWindow(sensorRGB);
-% ipWindow(ip);
-
-
-%%
-
-% ip = ipCreate;
-ip = ipSet(ip,'transforms',T);
 ip = ipSet(ip,'transform method','rgbwrestormer');
-
 for ii=1:numel(ipEXR)
     img = exrread(ipEXR{ii});
 
@@ -206,12 +186,7 @@ for ii=1:numel(ipEXR)
     ip = ipCompute(ip,sensorRGB);
     [~,ipName] = fileparts(ipEXR{ii});
     ip = ipSet(ip','name',ipName);
-
     ipWindow(ip);
-
-    % img = img/max(img(:));
-    % img = lin2rgb(img/max(img(:)));
-    % ieNewGraphWin; imshow(img);
 end
 
 

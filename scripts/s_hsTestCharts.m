@@ -5,17 +5,12 @@
 %%
 ieInit
 
-%%
+%% Make the scene
 
 % scene = sceneFromFile('Feng_Office-hdrs.mat','spectral');
-scene = sceneCreate('macbeth d65',64);
-sceneGet(scene,'size')
-% scene = sceneSet(scene,'resize',[512 512]);
-
+scene = sceneCreate('macbeth d65',32);
 
 oi = oiCreate('wvf');
-% oi = oiSet(oi,'optics model','shift invariant');
-
 wvf    = wvfCreate('spatial samples', 1024);
 [aperture, params] = wvfAperture(wvf,'nsides',8,...
     'dot mean',10, 'dot sd',5, 'dot opacity',0.5,'dot radius',5,...
@@ -25,8 +20,19 @@ oi = oiSet(oi,'fnumber',1.7);
 oi = oiSet(oi,'focal length',4.38e-3,'m');
 
 oi = oiCompute(oi, scene,'crop',true,'pixel size',1.5e-6,'aperture',aperture);
-
 % oiWindow(oi);
+
+%% Create the RGBW sensor
+
+sensorRGBW = sensorCreate('ar0132at',[],'rgbw');
+sensorRGBW = sensorSet(sensorRGBW,'match oi',oi);
+sensorRGBW = sensorSet(sensorRGBW,'name','rgbw');
+
+%{
+% Check the condition number of the spectra
+qe = sensorGet(sensorRGBW,'spectral qe');
+cond(qe)
+%}
 
 %% Prepare the exr directory
 
@@ -64,6 +70,7 @@ end
 % corresponding ipEXR file.
 ipEXR = cell(1,numel(expDuration));
 for ii=1:numel(expDuration)
+    fprintf('Demosaicking %d ... ',ii);
     [p,n,ext] = fileparts(fname{ii});
     ipEXR{ii} = sprintf('%s-ip%s',fullfile(p,n),ext);
     isetDemosaicNN('rgbw', fname{ii}, ipEXR{ii});
@@ -71,40 +78,38 @@ end
 
 %% Find the combined transform for the RGB sensors
 
-% We should be able to find T a simpler way and embed that into the
-% 'transform method','rgbw restormer'
 ip = ipCreate;
+
+%{
+% We should be able to find T a simpler way and embed that into the
+% 'transform method','rgbw restormer'.  Here we set the noise to zero
+% because it appears that T depends on the data in some way.
 sensorRGB = sensorCreate('ar0132at',[],'rgb');
-sensorRGB = sensorSet(sensorRGB,'match oi',oi);
-sensorRGB = sensorSet(sensorRGB,'name','rgb');
+sensorRGB = sensorSet(sensorRGB,'noise flag',0);
 sensorRGB = sensorCompute(sensorRGB,oi);
-% sensorWindow(sensorRGB);
+ip = ipCompute(ip,sensorRGB);  % Computes the Transforms
+%}
 
-ip = ipCompute(ip,sensorRGB);
-
-% ipWindow(ip);
-T = ipGet(ip,'transforms');
-
-%% Now run the rgbw restormer transform method with that transform.
-
-% ip = ipCreate;
+% If this works, let's try to just send in sensorQE rather than
+% sensoRGB.
+sensorRGB = sensorCreate('ar0132at',[],'rgb');
+T{1} = ieColorTransform(sensorRGB,'XYZ','D65','mcc');
+T{2} = eye(3,3);
+T{3} = ieInternal2Display(ip);
 ip = ipSet(ip,'transforms',T);
-ip = ipSet(ip,'transform method','rgbwrestormer');
 
+
+ip = ipSet(ip,'transform method','rgbwrestormer');
 for ii=1:numel(ipEXR)
     img = exrread(ipEXR{ii});
 
     ip = ipSet(ip,'sensor space',img);
 
-    ip = ipCompute(ip,sensor);
+    ip = ipCompute(ip,sensorRGB);
     [~,ipName] = fileparts(ipEXR{ii});
     ip = ipSet(ip','name',ipName);
 
     ipWindow(ip);
-
-    % img = img/max(img(:));
-    % img = lin2rgb(img/max(img(:)));
-    % ieNewGraphWin; imshow(img);
 end
 
 %%
