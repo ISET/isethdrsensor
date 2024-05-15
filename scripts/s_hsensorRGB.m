@@ -1,4 +1,4 @@
-%% Illustrate HDR imaging problems
+%% Illustrate HDR with a trained network for the AR0132at RGBW sensor
 %
 % This script reads a group of simulated scenes from the data stored
 % on acorn. The group separates the scene into four components, each
@@ -17,7 +17,9 @@ ieInit;
 %%  Specify the file
 
 
-% Use the script s_downloadLightGroup to add to this list
+% Use the script s_downloadLightGroup to add more light group scenes
+% to this list 
+%
 
 imageID = '1114091636';
 % 1114091636 - People on street

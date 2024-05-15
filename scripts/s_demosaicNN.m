@@ -15,7 +15,11 @@ requirements.txt is in utility/python.
   pip install -r requirements.txt
 
 %}
-pyenv('Version','/opt/miniconda3/envs/py39/bin/python');
+
+%{
+ pyenv('Version','/opt/miniconda3/envs/py39/bin/python');
+%}
+
 
 %% We need a scene and an OI
 %
