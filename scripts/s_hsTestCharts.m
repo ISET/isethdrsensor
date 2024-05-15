@@ -28,32 +28,6 @@ oi = oiCompute(oi, scene,'crop',true,'pixel size',1.5e-6,'aperture',aperture);
 
 % oiWindow(oi);
 
-%%
-
-sensorRGBW = sensorCreate('ar0132at',[],'rgbw');
-sensorRGBW = sensorSet(sensorRGBW,'match oi',oi);
-sensorRGBW = sensorSet(sensorRGBW,'name','rgbw');
-
-%{
-qe = sensorGet(sensorRGBW,'spectral qe');
-cond(qe)
-%}
-
-sensor = sensorCompute(sensorRGBW,oi);
-sensorWindow(sensor);
-
-%{
-sensorRGB = sensorCreate('ar0132at',[],'rgb');
-sensorRGB = sensorSet(sensorRGB,'match oi',oi);
-sensorRGB = sensorSet(sensorRGB,'name','rgb');
-sensorRGB = sensorCompute(sensorRGB,oi);
-sensorWindow(sensorRGB);
-ip = ipCreate;
-ip = ipCompute(ip,sensorRGB);
-ipWindow(ip);
-T = ipGet(ip,'transforms');
-%}
-
 %% Prepare the exr directory
 
 exrDir = fullfile(isethdrsensorRootPath,'local','exr',string(datetime('today')));
@@ -95,16 +69,37 @@ for ii=1:numel(expDuration)
     isetDemosaicNN('rgbw', fname{ii}, ipEXR{ii});
 end
 
-%% Show the results
+%% Find the combined transform for the RGB sensors
 
+% We should be able to find T a simpler way and embed that into the
+% 'transform method','rgbw restormer'
 ip = ipCreate;
+sensorRGB = sensorCreate('ar0132at',[],'rgb');
+sensorRGB = sensorSet(sensorRGB,'match oi',oi);
+sensorRGB = sensorSet(sensorRGB,'name','rgb');
+sensorRGB = sensorCompute(sensorRGB,oi);
+% sensorWindow(sensorRGB);
+
+ip = ipCompute(ip,sensorRGB);
+
+% ipWindow(ip);
+T = ipGet(ip,'transforms');
+
+%% Now run the rgbw restormer transform method with that transform.
+
+% ip = ipCreate;
+ip = ipSet(ip,'transforms',T);
+ip = ipSet(ip,'transform method','rgbwrestormer');
+
 for ii=1:numel(ipEXR)
     img = exrread(ipEXR{ii});
 
     ip = ipSet(ip,'sensor space',img);
-    ip = ipSet(ip','name',ipEXR{ii});
-    ip = ipSet(ip,'transforms',T);
+
     ip = ipCompute(ip,sensor);
+    [~,ipName] = fileparts(ipEXR{ii});
+    ip = ipSet(ip','name',ipName);
+
     ipWindow(ip);
 
     % img = img/max(img(:));
