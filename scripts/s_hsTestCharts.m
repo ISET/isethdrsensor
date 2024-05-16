@@ -80,24 +80,19 @@ end
 
 ip = ipCreate;
 
-%{
-% We should be able to find T a simpler way and embed that into the
-% 'transform method','rgbw restormer'.  Here we set the noise to zero
-% because it appears that T depends on the data in some way.
-sensorRGB = sensorCreate('ar0132at',[],'rgb');
-sensorRGB = sensorSet(sensorRGB,'noise flag',0);
-sensorRGB = sensorCompute(sensorRGB,oi);
-ip = ipCompute(ip,sensorRGB);  % Computes the Transforms
-%}
 
-% If this works, let's try to just send in sensorQE rather than
-% sensoRGB.
-sensorRGB = sensorCreate('ar0132at',[],'rgb');
-T{1} = ieColorTransform(sensorRGB,'XYZ','D65','mcc');
+% These match!  So write a routine to get the transforms based on the
+% RGB of the RGBW sensor.  No need to create the RGB and run an
+% ipCompute to calculate the transforms.
+wave     = sensorGet(sensorRGBW,'wave');
+sensorQE = sensorGet(sensorRGBW,'spectral qe');
+targetQE = ieReadSpectra('xyzQuanta',wave);
+T{1} = imageSensorTransform(sensorQE(:,1:3),targetQE,'D65',wave,'mcc');
+% T{1} = ieColorTransform(sensorRGB,'XYZ','D65','mcc');
 T{2} = eye(3,3);
 T{3} = ieInternal2Display(ip);
 ip = ipSet(ip,'transforms',T);
-
+ip = ipSet(ip,'transform method','current');
 
 ip = ipSet(ip,'transform method','rgbwrestormer');
 for ii=1:numel(ipEXR)
