@@ -56,8 +56,12 @@ def demosaic(model_path, input_path, output_path):
         raise ValueError("Unsupported number of channels. Expected 3 (RGB) or 4 (RGBW).")
 
     processed_img = crop_and_infer(img, 512, 512, original_height, original_width, output_channels)
-    cv2.imwrite(output_path, processed_img, [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_FLOAT])
+    if channels ==3:
+        cv2.imwrite(output_path, cv2.cvtColor(processed_img, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_FLOAT])
+    elif channels ==4:
+        cv2.imwrite(output_path, processed_img, [cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_FLOAT])
+        
     print("INFO: Demosaicing is successfully completed.")
 
 # Example usage
-# demosaic('model.onnx', 'input.exr', 'output.exr')
+# demosaic('/Users/zhenyi/git_repo/dev/isethdrsensor/networks/NNDemosaicRGB.onnx', "/Users/zhenyi/git_repo/dev/isethdrsensor/local/exr/17-May-2024/10H28S-RGB-66.67.exr", '/Users/zhenyi/git_repo/dev/isethdrsensor/local/exr/17-May-2024/10H28S-RGB-66.67-ip.exr')
