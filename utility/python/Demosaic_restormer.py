@@ -3,6 +3,7 @@ import cv2
 import pyexr
 import onnxruntime as ort
 import os
+import numpy as np
 
 os.environ["OPENCV_IO_ENABLE_OPENEXR"] = "1"
 
