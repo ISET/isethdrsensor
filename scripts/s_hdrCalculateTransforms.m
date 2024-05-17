@@ -1,9 +1,11 @@
 %% Calculate the three ip transforms in different ways
 %
-% We want to be able to do this, sometimes, outside of calling the
-% full ipCompute() method.
+% We want to be able to calculate these without calling the full
+% ipCompute() method. These three approaches all return the same full
+% transforms.
 %
-% 
+% See also
+%   s_hsTestCharts.m
 
 %% We need a small scene and oi
 scene = sceneCreate('macbeth d65',32);
