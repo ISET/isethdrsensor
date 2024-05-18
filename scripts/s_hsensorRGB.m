@@ -11,15 +11,25 @@
 % See also
 %  s_autoLightGroups (isetauto)
 
+% We assume you have the python miniconda environment running
+% See s_python
+%
+% pyenv('Version','/opt/miniconda3/envs/py39/bin/python');
+%
+% You can check whether it is up by running
+%
+%   pyversion
+%
+
 %%
 ieInit;
 
 %%  Specify the file
 
 % Use the script s_downloadLightGroup to add more light group scenes
-% to this list 
+% to this list
 
-imageID = '1114091636';
+imageID = '1114011756';
 % 1114091636 - People on street
 % 1114011756 - Vans moving away, person
 % 1113094429
@@ -37,6 +47,7 @@ for ll = 1:numel(lgt)
     destFile = fullfile(destPath,thisFile);
     scenes{ll} = piEXR2ISET(destFile);
 end
+disp('Done loading.')
 
 %%  Create a merged radiance scene
 % head, street, other, sky
@@ -45,17 +56,16 @@ end
 wgts = [0.02, 0.1, 0.02, 0.00001]; % night
 scene = sceneAdd(scenes, wgts);
 scene.metadata.wgts = wgts;
-
+disp('Done adding')
 %% If you want, crop out the headlight region of the scene for testing
 %
-% You can do this in the window, get the scene, and find the crop
+% You can crop in the window, get the scene, and find the crop.  The
+% rect will be attached to the scene object.
 %
-% sceneHeadlight = ieGetObject('scene'); 
-%
-% TODO:  Add crop to the scene window pull down.
+%   sceneHeadlight = ieGetObject('scene');
 %
 
-%{
+% {
 form = [1 1 511 511];
 switch imageID
     case '1114011756'
@@ -69,6 +79,7 @@ switch imageID
     otherwise
         error('Unknown imageID')
 end
+disp('Done cropping')
 %}
 
 %% We could convert the scene via wvf in various ways
@@ -100,14 +111,7 @@ exrDir = fullfile(isethdrsensorRootPath,'local','exr',string(datetime('today')))
 if ~exist(exrDir,'dir'), mkdir(exrDir); end
 
 % Note the hour and time
-[HH,mm] = hms(datetime('now')); 
-
-% [ip, sensor] = piRadiance2RGB(oi,'etime',1/60,'analoggain',1/10,'quantization','12bit');
-% ipWindow(ip);
-
-%% Save sensor data in EXR file
-% rgbName = sprintf('%02dH%02dS-RGB-%.2f.exr',uint8(HH),uint8(mm),sensorGet(sensor,'exp time','ms'));
-% sensor2EXR(sensor,fullfile(exrDir,rgbName))
+[HH,mm] = hms(datetime('now'));
 
 %% Turn off the noise and recompute
 
@@ -120,152 +124,87 @@ ip = ipCompute(ip,sensor);
 ipWindow(ip);
 %}
 
-%%
-% rgbName = sprintf('%02dH%02dS-RGB-NoNoise-%.2f.exr',uint8(HH),uint8(mm),sensorGet(sensor,'exp time','ms'));
-% sensor2EXR(sensor,fullfile(exrDir,rgbName))
-
-%%  Use the RGBW sensor and demosaic with ISETCam (ip)
+%%  Create the two sensor
 
 sensorRGBW = sensorCreate('ar0132at',[],'rgbw');
-sensorRGBW = sensorSet(sensorRGBW,'match oi',oi);
-sensorRGBW = sensorSet(sensorRGBW,'name','rgbw');
-
-%{
-qe = sensorGet(sensorRGBW,'spectral qe');
-cond(qe)
-%}
-
-expDuration = [1/15, 1/30, 1/60];
-fname = cell(numel(expDuration),1);
-fprintf('Creating EXR ...');
-for dd = 1:numel(expDuration)
-    sensorRGBW = sensorSet(sensorRGBW,'exp time',expDuration(dd));
-    sensorRGBW = sensorCompute(sensorRGBW,oi);    
-    fname{dd}  = sprintf('%02dH%02dS-RGBW-%.2f.exr',uint8(HH),uint8(mm),sensorGet(sensorRGBW,'exp time','ms'));
-    fname{dd}  = sensor2EXR(sensorRGBW,fullfile(exrDir,fname{dd}));
-end
-disp('done.')
-
-%% Demosaic the RGBW using the trained Restormer network
-
-% We assume you have the python miniconda environment running
-% See s_python
-%
-% pyenv('Version','/opt/miniconda3/envs/py39/bin/python');
-%
-% You can check whether it is up by running
-%
-%   pyversion
-%
-
-% Run demosaic on each of the sensor EXR files. Write them out to a
-% corresponding ipEXR file.
-ipEXR = cell(1,numel(expDuration));
-for ii=1:numel(expDuration)
-    fprintf('Scene %d: ',ii);
-    [p,n,ext] = fileparts(fname{ii});
-    ipEXR{ii} = sprintf('%s-ip%s',fullfile(p,n),ext);
-    isetDemosaicNN('rgbw', fname{ii}, ipEXR{ii});
-end
-
-%% Find the combined transform for the RGB sensors
-
-ip = ipCreate;
-
-% Create the rendering transforms
-wave     = sensorGet(sensorRGBW,'wave');
-sensorQE = sensorGet(sensorRGBW,'spectral qe');
-targetQE = ieReadSpectra('xyzQuanta',wave);
-T{1} = imageSensorTransform(sensorQE(:,1:3),targetQE,'D65',wave,'mcc');
-T{2} = eye(3,3);
-T{3} = ieInternal2Display(ip);
-
-ip = ipSet(ip,'demosaic method','skip');
-ip = ipSet(ip,'transforms',T);
-ip = ipSet(ip,'transform method','current');
-
-for ii=1:numel(ipEXR)
-    img = exrread(ipEXR{ii});
-
-    ip = ipSet(ip,'sensor space',img);
-
-    ip = ipCompute(ip,sensorRGBW);
-    [~,ipName] = fileparts(ipEXR{ii});
-    ip = ipSet(ip','name',ipName);
-    ipWindow(ip);
-end
-
-%{
-
-%%  Use the RGB sensor and demosaic with ISETCam (ip)
-
 sensorRGB = sensorCreate('ar0132at',[],'rgb');
-sensorRGB = sensorSet(sensorRGB,'match oi',oi);
-sensorRGB = sensorSet(sensorRGB,'name','rgb');
 
-%{
-qe = sensorGet(sensorRGBW,'spectral qe');
+%% For each sensor
+for ss = 1:2
+
+    if ss==1
+        thisSensor = sensorRGBW;
+        thisType = 'rgbw';
+    elseif ss == 2
+        thisSensor = sensorRGB;
+        thisType = 'rgb';
+    end
+
+    thisSensor = sensorSet(thisSensor,'match oi',oi);
+    thisSensor = sensorSet(thisSensor,'name',thisType);
+
+    %{
+qe = sensorGet(thisSensor,'spectral qe');
 cond(qe)
-%}
+    %}
 
-expDuration = [1/15, 1/30, 1/60];
-fname = cell(numel(expDuration),1);
-fprintf('Creating EXR ...');
-for dd = 1:numel(expDuration)
-    sensorRGB = sensorSet(sensorRGB,'exp time',expDuration(dd));
-    sensorRGB = sensorCompute(sensorRGB,oi);    
-    fname{dd}  = sprintf('%02dH%02dS-RGB-%.2f.exr',uint8(HH),uint8(mm),sensorGet(sensorRGB,'exp time','ms'));
-    fname{dd}  = sensor2EXR(sensorRGB,fullfile(exrDir,fname{dd}));
-end
-disp('done.')
+    expDuration = [1/15, 1/30, 1/60];
+    fname = cell(numel(expDuration),1);
+    fprintf('Creating EXR ...');
+    for dd = 1:numel(expDuration)
+        thisSensor = sensorSet(thisSensor,'exp time',expDuration(dd));
+        thisSensor = sensorCompute(thisSensor,oi);
+        fname{dd}  = sprintf('%02dH%02dS-%s-%.2f.exr',uint8(HH),uint8(mm),thisType,sensorGet(thisSensor,'exp time','ms'));
+        fname{dd}  = sensor2EXR(thisSensor,fullfile(exrDir,fname{dd}));
+    end
+    disp('done.')
 
-%% Demosaic the RGBW using the trained Restormer network
+    %% Demosaic the RGBW using the trained Restormer network
 
-% We assume you have the python miniconda environment running
-% See s_python
-%
-% pyenv('Version','/opt/miniconda3/envs/py39/bin/python');
-%
-% You can check whether it is up by running
-%
-%   pyversion
-%
+    % Run demosaic on each of the sensor EXR files. Write them out to a
+    % corresponding ipEXR file.
+    ipEXR = cell(1,numel(expDuration));
+    for ii=1:numel(expDuration)
+        fprintf('Scene %d: ',ii);
+        [p,n,ext] = fileparts(fname{ii});
+        ipEXR{ii} = sprintf('%s-ip%s',fullfile(p,n),ext);
+        isetDemosaicNN(thisType, fname{ii}, ipEXR{ii});
+    end
 
-% Run demosaic on each of the sensor EXR files. Write them out to a
-% corresponding ipEXR file.
-ipEXR = cell(1,numel(expDuration));
-for ii=1:numel(expDuration)
-    fprintf('Scene %d: ',ii);
-    [p,n,ext] = fileparts(fname{ii});
-    ipEXR{ii} = sprintf('%s-ip%s',fullfile(p,n),ext);
-    isetDemosaicNN('rgb', fname{ii}, ipEXR{ii});
-end
+    %% Find the combined transform for the RGB sensors
 
-%% Find the combined transform for the RGB sensors
+    ip = ipCreate;
 
-ip = ipCreate;
+    % Create the rendering transforms
+    wave     = sensorGet(thisSensor,'wave');
+    sensorQE = sensorGet(thisSensor,'spectral qe');
+    targetQE = ieReadSpectra('xyzQuanta',wave);
+    T{1} = imageSensorTransform(sensorQE(:,1:3),targetQE,'D65',wave,'mcc');
+    T{2} = eye(3,3);
+    T{3} = ieInternal2Display(ip);
 
-% Create the rendering transforms
-wave     = sensorGet(sensorRGB'wave');
-sensorQE = sensorGet(sensorRGB,'spectral qe');
-targetQE = ieReadSpectra('xyzQuanta',wave);
-T{1} = imageSensorTransform(sensorQE(:,1:3),targetQE,'D65',wave,'mcc');
-T{2} = eye(3,3);
-T{3} = ieInternal2Display(ip);
+    ip = ipSet(ip,'demosaic method','skip');
+    ip = ipSet(ip,'transforms',T);
+    ip = ipSet(ip,'transform method','current');
 
-ip = ipSet(ip,'demosaic method','skip');
-ip = ipSet(ip,'transforms',T);
-ip = ipSet(ip,'transform method','current');
+    for ii=1:numel(ipEXR)
+        img = exrread(ipEXR{ii});
 
-for ii=1:numel(ipEXR)
-    img = exrread(ipEXR{ii});
+        ip = ipSet(ip,'sensor space',img);
 
-    ip = ipSet(ip,'sensor space',img);
+        ip = ipCompute(ip,thisSensor);
+        [~,ipName] = fileparts(ipEXR{ii});
+        ip = ipSet(ip','name',ipName);
+        ipWindow(ip);
+    end
 
-    ip = ipCompute(ip,sensorRGBW);
-    [~,ipName] = fileparts(ipEXR{ii});
-    ip = ipSet(ip','name',ipName);
-    ipWindow(ip);
 end
 
-%}
+%% Try some ipPlots
+ieSelectObject('ip',3);   % RGBW
+ip = ieGetObject('ip'); ipPlot(ip,'horizontal line', [1,470]);
+title('RGBW');
+
+ieSelectObject('ip',6);   % RGB
+ip = ieGetObject('ip'); ipPlot(ip,'horizontal line', [1,470]);
+title('RGB');
