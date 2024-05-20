@@ -52,7 +52,10 @@ if ~exist(exrDir,'dir'), mkdir(exrDir); end
 % Note the hour and time for this run.
 [HH,mm] = hms(datetime('now'));
 
-expDuration = 1/15;
+
+% Make short duration, under exposed, to emphasize the de-noising of the
+% RGBW network.  Or, HDR scenes but look in the dark parts.
+expDuration = 1/1000;
 fname = cell(numel(expDuration),1);
 for ss=1:2
     if ss == 1,     thisSensor = sensorRGBW; thisType = 'rgbw';
