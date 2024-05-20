@@ -29,7 +29,7 @@ ieInit;
 % Use the script s_downloadLightGroup to add more light group scenes
 % to this list
 
-imageID = '1114011756';
+imageID = '1114091636';
 % 1114091636 - People on street
 % 1114011756 - Vans moving away, person
 % 1113094429
@@ -144,8 +144,8 @@ for ss = 1:2
     thisSensor = sensorSet(thisSensor,'name',thisType);
 
     %{
-qe = sensorGet(thisSensor,'spectral qe');
-cond(qe)
+      qe = sensorGet(thisSensor,'spectral qe');
+      cond(qe)
     %}
 
     expDuration = [1/15, 1/30, 1/60];
@@ -159,7 +159,7 @@ cond(qe)
     end
     disp('done.')
 
-    %% Demosaic the RGBW using the trained Restormer network
+    % Demosaic the RGBW using the trained Restormer network
 
     % Run demosaic on each of the sensor EXR files. Write them out to a
     % corresponding ipEXR file.
@@ -171,7 +171,7 @@ cond(qe)
         isetDemosaicNN(thisType, fname{ii}, ipEXR{ii});
     end
 
-    %% Find the combined transform for the RGB sensors
+    % Find the combined transform for the RGB sensors
 
     ip = ipCreate;
 
@@ -201,10 +201,17 @@ cond(qe)
 end
 
 %% Try some ipPlots
-ieSelectObject('ip',3);   % RGBW
-ip = ieGetObject('ip'); ipPlot(ip,'horizontal line', [1,470]);
-title('RGBW');
 
-ieSelectObject('ip',6);   % RGB
-ip = ieGetObject('ip'); ipPlot(ip,'horizontal line', [1,470]);
-title('RGB');
+vcSetSelectedObject('ip',3);   % RGBW
+ip = ieGetObject('ip'); [uDataRGBW,hdlRGBW] = ipPlot(ip,'horizontal line', [1,470]);
+
+vcSetSelectedObject('ip',6);   % RGB
+ip = ieGetObject('ip'); [uDataRGB,hdlRGB] = ipPlot(ip,'horizontal line', [1,470]);
+
+nChildren = 3;
+for ii=1:nChildren
+    set(hdlRGBW.Children(ii),'ylim',[0 10^-2]);
+    set(hdlRGB.Children(ii),'ylim',[0 10^-2]);
+end
+
+%%
