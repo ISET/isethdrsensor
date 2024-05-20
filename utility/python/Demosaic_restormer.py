@@ -12,7 +12,7 @@ def demosaic(model_path, input_path, output_path):
         height, width, channels = img.shape
         pad_height = (target_height - height % target_height) % target_height
         pad_width = (target_width - width % target_width) % target_width
-        return np.pad(img, ((0, pad_height), (0, pad_width), (0, 0)), mode='constant', constant_values=0)
+        return np.pad(img, ((0, pad_height), (0, pad_width), (0, 0)), mode='reflect') 
 
     def crop_and_infer(img, target_height, target_width, original_height, original_width, output_channels):
         padded_img = pad_image(img, target_height, target_width)
@@ -64,4 +64,6 @@ def demosaic(model_path, input_path, output_path):
     print("INFO: Demosaicing is successfully completed.")
 
 # Example usage
-# demosaic('/Users/zhenyi/git_repo/dev/isethdrsensor/networks/NNDemosaicRGB.onnx', "/Users/zhenyi/git_repo/dev/isethdrsensor/local/exr/17-May-2024/10H28S-RGB-66.67.exr", '/Users/zhenyi/git_repo/dev/isethdrsensor/local/exr/17-May-2024/10H28S-RGB-66.67-ip.exr')
+# demosaic('/Users/zhenyi/git_repo/dev/isethdrsensor/networks/NNDemosaicRGB.onnx', 
+#          "/Users/zhenyi/git_repo/dev/isethdrsensor/local/exr/20-May-2024/10H23S-rgb-1.00.exr", 
+#          '/Users/zhenyi/git_repo/dev/isethdrsensor/local/exr/20-May-2024/10H23S-rgb-1.00-ip.exr')
