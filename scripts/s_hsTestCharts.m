@@ -9,15 +9,18 @@ ieInit
 
 %% Make the scene
 
+% scene = sceneCreate('point array',512,128);
 % scene = sceneFromFile('Feng_Office-hdrs.mat','spectral');
 % scene = sceneCreate('macbeth d65',37);
 % scene = sceneCreate('rings rays',5,256);
 % scene = sceneCreate('slanted edge',512); scene = sceneSet(scene,'fov',2);
 % scene = sceneCreate('hdr lights');
 % woodDuck.png, FruitMCC_6500.tif, cameraman.tif
-[scene, background] = sceneCreate('hdr image','dynamic range',3,'background','woodDuck.png','patch shape','circle');
+[scene, background] = sceneCreate('hdr image','npatches',8,'dynamic range',4,'background','woodDuck.png','patch shape','circle');
+
 scene = sceneSet(scene,'fov',10);
-background = sceneSet(background,'fov',10);
+
+% background = sceneSet(background,'fov',10);
 %{
 % background = sceneFromFile('FruitMCC_6500.tif','rgb',1,displayCreate,400:10:700);
 background = sceneCreate('uniformee',512);
@@ -29,16 +32,18 @@ scene = sceneAdd(scene,background);
 
 %%
 [oi,wvf] = oiCreate('wvf');
-wvf = wvfSet(wvf,'spatial samples',256);
+wvf = wvfSet(wvf,'spatial samples',1024);
 
 params = wvfApertureP;
+params.nsides = 6;
+params.linemean = 500;
 aperture = wvfAperture(wvf,params);
 
 oi = oiSet(oi,'fnumber',1.7);
 oi = oiSet(oi,'focal length',4.38e-3,'m');
 
 oi = oiCompute(oi, scene,'crop',true,'pixel size',1.5e-6,'aperture',aperture);
-oiWindow(oi);
+% oiWindow(oi);
 
 %% Create the RGBW and RGB sensors
 
@@ -46,19 +51,138 @@ oiWindow(oi);
 sensor = sensorCreate('ar0132at',[],'rgb');
 sensor = sensorSet(sensor,'match oi',oi);
 
-%%
+eTime  = autoExposure(oi,sensor,0.95,'luminance');
 ip = ipCreate;
 
-eTime  = autoExposure(oi,sensor,0.95,'luminance');
+%% Dynamic range
 
+ieInit;
 
-expDuration = logspace(log10(eTime),log10(eTime)+2,8);
+params = wvfApertureP;
+
+[oi,wvf] = oiCreate('wvf');
+wvf = wvfSet(wvf,'spatial samples',1024);
+aperture = wvfAperture(wvf,params);
+
+oi = oiSet(oi,'fnumber',1.7);
+oi = oiSet(oi,'focal length',4.38e-3,'m');
+oi = oiCompute(oi, scene,'crop',true,'pixel size',1.5e-6,'aperture',aperture);
+
+expDuration = logspace(log10(eTime)+1,log10(eTime)+3.5,48);
 for dd = 1:numel(expDuration)
     sensor = sensorSet(sensor,'exp time',expDuration(dd));
     sensor = sensorCompute(sensor,oi);
     ip = ipCompute(ip,sensor);
-    ipWindow(ip);
+
+    srgb = ipGet(ip,'srgb');
+    imagesc(srgb); axis image; axis off;
+    if dd == 1
+        gif('clear');
+        gif('dynamicRange.gif');
+        gif('DelayTime',3/15);
+        gif('LoopCount',1000);
+    end
+    gif;
 end
+
+%%
+web('dynamicRange.gif');
+
+%%
+
+[oi,wvf] = oiCreate('wvf');
+oi = oiSet(oi,'fnumber',1.7);
+oi = oiSet(oi,'focal length',4.38e-3,'m');
+wvf = wvfSet(wvf,'spatial samples',1024);
+
+%{
+params = 
+
+  struct with fields:
+
+         nsides: 5
+        dotmean: 10
+          dotsd: 5
+     dotopacity: 0.5000
+      dotradius: 5
+       linemean: 10
+         linesd: 5
+    lineopacity: 0.5000
+      linewidth: 2
+%}
+params = wvfApertureP;
+
+% sensor = sensorCreate('imx363');
+sensor = sensorCreate('ar0132at',[],'rgb');
+sensor = sensorSet(sensor,'match oi',oi);
+ip = ipCreate;
+
+%%
+ieInit;
+
+params = wvfApertureP;
+params.lineopacity = .5;
+params.linemean = 0; params.linesd = 0;
+params.dotmean = 100; params.dotsd = 0;
+
+for dotopacity = 0:0.1:1
+    params.dotopacity = dotopacity;
+    
+    aperture = wvfAperture(wvf,params);
+    ieNewGraphWin; imagesc(aperture);
+
+    oi = oiCompute(oi, scene,'crop',true,'pixel size',1.5e-6,'aperture',aperture);
+    % oiWindow(oi);
+
+    eTime  = autoExposure(oi,sensor,0.95,'luminance');
+    sensor = sensorSet(sensor,'exp time',eTime*1000);
+    sensor = sensorCompute(sensor,oi);
+    ip = ipCompute(ip,sensor);
+    ipWindow(ip); drawnow;
+
+end
+
+%% NSIDES
+
+ieInit;
+
+params = wvfApertureP;
+
+[oi,wvf] = oiCreate('wvf');
+wvf = wvfSet(wvf,'spatial samples',1024);
+aperture = wvfAperture(wvf,params);
+
+oi = oiSet(oi,'fnumber',1.7);
+oi = oiSet(oi,'focal length',4.38e-3,'m');
+oi = oiCompute(oi, scene,'crop',true,'pixel size',1.5e-6,'aperture',aperture);
+
+for nsides = (3:1:20)
+    params.nsides = nsides;
+    
+    aperture = wvfAperture(wvf,params);
+    % ieNewGraphWin; imagesc(aperture);
+
+    oi = oiCompute(oi, scene,'crop',true,'pixel size',1.5e-6,'aperture',aperture);
+    % oiWindow(oi);
+
+    eTime  = autoExposure(oi,sensor,0.95,'luminance');
+    sensor = sensorSet(sensor,'exp time',eTime*1000);
+    sensor = sensorCompute(sensor,oi);
+    ip = ipCompute(ip,sensor);
+    srgb = ipGet(ip,'srgb');
+    imagesc(srgb); axis image; axis off; truesize;
+    if nsides == 3
+        gif('clear');
+        gif('nsides.gif');
+        gif('DelayTime',8/15,'LoopCount',1000);
+    end
+    gif;
+    
+    % ipWindow(ip); drawnow;
+end
+
+%%
+web('nsides.gif');
 
 %%
 %{
