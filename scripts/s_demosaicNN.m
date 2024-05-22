@@ -1,6 +1,6 @@
 %% Demosaic with a trained Restormer network
 %
-% 
+% See h_sensorRGB and H-hsTestCharts
 
 %% Set up ISET and the Python environment
 ieInit;
