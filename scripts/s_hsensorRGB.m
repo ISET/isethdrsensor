@@ -10,7 +10,7 @@
 %
 % See also
 %  s_autoLightGroups (isetauto)
-
+%
 % We assume you have the python miniconda environment running
 % See s_python
 %

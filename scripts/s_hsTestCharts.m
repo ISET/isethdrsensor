@@ -16,9 +16,13 @@ ieInit
 % scene = sceneCreate('slanted edge',512); scene = sceneSet(scene,'fov',2);
 % scene = sceneCreate('hdr lights');
 % woodDuck.png, FruitMCC_6500.tif, cameraman.tif
-[scene, background] = sceneCreate('hdr image','npatches',8,'dynamic range',4,'background','woodDuck.png','patch shape','circle');
+scene = sceneCreate('hdr image',...
+    'npatches',5,...
+    'dynamic range',4,...
+    'background','FruitMCC_6500.tif',...
+    'patch shape','circle');
 
-scene = sceneSet(scene,'fov',10);
+scene = sceneSet(scene,'fov',20);
 
 % background = sceneSet(background,'fov',10);
 %{
@@ -35,8 +39,8 @@ scene = sceneAdd(scene,background);
 wvf = wvfSet(wvf,'spatial samples',1024);
 
 params = wvfApertureP;
-params.nsides = 6;
-params.linemean = 500;
+params.nsides = 5;
+params.linemean = 5;
 aperture = wvfAperture(wvf,params);
 
 oi = oiSet(oi,'fnumber',1.7);
@@ -54,6 +58,8 @@ sensor = sensorSet(sensor,'match oi',oi);
 eTime  = autoExposure(oi,sensor,0.95,'luminance');
 ip = ipCreate;
 
+[HH,mm] = hms(datetime('now'));
+
 %% Dynamic range
 
 ieInit;
@@ -67,18 +73,17 @@ aperture = wvfAperture(wvf,params);
 oi = oiSet(oi,'fnumber',1.7);
 oi = oiSet(oi,'focal length',4.38e-3,'m');
 oi = oiCompute(oi, scene,'crop',true,'pixel size',1.5e-6,'aperture',aperture);
-
-expDuration = logspace(log10(eTime)+1,log10(eTime)+3.5,48);
+expDuration = logspace(log10(eTime)+1.5,log10(eTime)+3.5,48);
 for dd = 1:numel(expDuration)
     sensor = sensorSet(sensor,'exp time',expDuration(dd));
     sensor = sensorCompute(sensor,oi);
     ip = ipCompute(ip,sensor);
 
     srgb = ipGet(ip,'srgb');
-    imagesc(srgb); axis image; axis off;
+    imagesc(srgb); axis image; axis off; truesize;
     if dd == 1
-        gif('clear');
-        gif('dynamicRange.gif');
+        fname = sprintf('dynamicRange-%02d-%02d.gif',HH,mm);
+        gif(fname);
         gif('DelayTime',3/15);
         gif('LoopCount',1000);
     end
@@ -86,7 +91,7 @@ for dd = 1:numel(expDuration)
 end
 
 %%
-web('dynamicRange.gif');
+web(fname);
 
 %%
 
