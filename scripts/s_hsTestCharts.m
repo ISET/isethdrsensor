@@ -16,17 +16,21 @@ ieInit
 % scene = sceneCreate('slanted edge',512); scene = sceneSet(scene,'fov',2);
 % scene = sceneCreate('hdr lights');
 % woodDuck.png, FruitMCC_6500.tif, cameraman.tif
+
 scene = sceneCreate('hdr image',...
     'npatches',5,...
     'dynamic range',4,...
-    'background','Feng_Office-hdrs.mat',...
-    'patch shape','circle');
+    'background','FruitMCC_6500.tif',...
+    'patch shape','circle', ...
+    'patch size',10);
 
+% scene = sceneFromFile('Feng_Office-hdrs.mat','spectral');
 scene = sceneSet(scene,'fov',20);
 
-% background = sceneSet(background,'fov',10);
 %{
-% background = sceneFromFile('FruitMCC_6500.tif','rgb',1,displayCreate,400:10:700);
+background = sceneSet(background,'fov',10);
+background = sceneFromFile('FruitMCC_6500.tif','rgb',1,displayCreate,400:10:700);
+background = sceneFromFile('Feng_Office-hdrs.mat','spectral',1,displayCreate,400:50:700);
 background = sceneCreate('uniformee',512);
 background = sceneAdjustLuminance(background,1);
 scene = sceneCreate('hdr lights');
@@ -61,39 +65,40 @@ ip = ipCreate;
 [HH,mm] = hms(datetime('now'));
 
 %% Dynamic range
+ieNewGraphWin;
+expDuration = logspace(log10(eTime)+2,log10(eTime)+3.5,36);
+% expDuration = logspace(log10(eTime),log10(eTime)+3,16);
+imagecell = cell(numel(expDuration),1);
 
-ieInit;
-
-params = wvfApertureP;
-
-[oi,wvf] = oiCreate('wvf');
-wvf = wvfSet(wvf,'spatial samples',1024);
-aperture = wvfAperture(wvf,params);
-
-oi = oiSet(oi,'fnumber',1.7);
-oi = oiSet(oi,'focal length',4.38e-3,'m');
-oi = oiCompute(oi, scene,'crop',true,'pixel size',1.5e-6,'aperture',aperture);
-expDuration = logspace(log10(eTime)+1.5,log10(eTime)+3.5,48);
 for dd = 1:numel(expDuration)
     sensor = sensorSet(sensor,'exp time',expDuration(dd));
     sensor = sensorCompute(sensor,oi);
     ip = ipCompute(ip,sensor);
 
     srgb = ipGet(ip,'srgb');
-    imagesc(srgb); axis image; axis off; truesize;
+    %{
     if dd == 1
+        imagesc(srgb); axis image; axis off; truesize;
         fname = sprintf('dynamicRange-%02d-%02d.gif',HH,mm);
         gif(fname);
         gif('DelayTime',3/15);
-        gif('LoopCount',1000);
+        gif('LoopCount',1000);        
+    else
+        imagesc(srgb); axis image; axis off; truesize;
     end
     gif;
+    %}
+    imagecell{dd} = srgb;
 end
+
+%%
+montage(imagecell);
+montage(imagecell(1:3:end));
 
 %%
 web(fname);
 
-%%
+%% 0----------
 
 [oi,wvf] = oiCreate('wvf');
 oi = oiSet(oi,'fnumber',1.7);
@@ -132,7 +137,7 @@ params.dotmean = 100; params.dotsd = 0;
 
 for dotopacity = 0:0.1:1
     params.dotopacity = dotopacity;
-    
+
     aperture = wvfAperture(wvf,params);
     ieNewGraphWin; imagesc(aperture);
 
@@ -163,7 +168,7 @@ oi = oiCompute(oi, scene,'crop',true,'pixel size',1.5e-6,'aperture',aperture);
 
 for nsides = (3:1:20)
     params.nsides = nsides;
-    
+
     aperture = wvfAperture(wvf,params);
     % ieNewGraphWin; imagesc(aperture);
 
@@ -182,7 +187,7 @@ for nsides = (3:1:20)
         gif('DelayTime',8/15,'LoopCount',1000);
     end
     gif;
-    
+
     % ipWindow(ip); drawnow;
 end
 
