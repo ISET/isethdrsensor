@@ -18,7 +18,7 @@ ieInit
 % woodDuck.png, FruitMCC_6500.tif, cameraman.tif
 
 scene = sceneCreate('hdr image',...
-    'npatches',5,...
+    'npatches',1,...
     'dynamic range',4,...
     'background','FruitMCC_6500.tif',...
     'patch shape','circle', ...
@@ -27,6 +27,10 @@ scene = sceneCreate('hdr image',...
 % scene = sceneFromFile('Feng_Office-hdrs.mat','spectral');
 scene = sceneSet(scene,'fov',20);
 
+sceneRGB = sceneGet(scene,'srgb');
+%{
+sceneWindow(scene);
+%}
 %{
 background = sceneSet(background,'fov',10);
 background = sceneFromFile('FruitMCC_6500.tif','rgb',1,displayCreate,400:10:700);
@@ -55,28 +59,39 @@ oi = oiCompute(oi, scene,'crop',true,'pixel size',1.5e-6,'aperture',aperture);
 
 %% Create the RGBW and RGB sensors
 
+ip = ipCreate;
+
 % sensor = sensorCreate('imx363');
 sensor = sensorCreate('ar0132at',[],'rgb');
 sensor = sensorSet(sensor,'match oi',oi);
+sensor = sensorSet(sensor,'pixel voltage swing',1);
 
 eTime  = autoExposure(oi,sensor,0.95,'luminance');
-ip = ipCreate;
 
-[HH,mm] = hms(datetime('now'));
+% [HH,mm] = hms(datetime('now'));
 
 %% Dynamic range
-ieNewGraphWin;
-expDuration = logspace(log10(eTime)+2,log10(eTime)+3.5,36);
-% expDuration = logspace(log10(eTime),log10(eTime)+3,16);
+expDuration = logspace(log10(eTime)+1.5,log10(eTime)+3.5,9);
 imagecell = cell(numel(expDuration),1);
 
 for dd = 1:numel(expDuration)
     sensor = sensorSet(sensor,'exp time',expDuration(dd));
     sensor = sensorCompute(sensor,oi);
     ip = ipCompute(ip,sensor);
+    imagecell{dd} = ipGet(ip,'srgb');         
+end
 
-    srgb = ipGet(ip,'srgb');
-    %{
+%% Make some comparison images
+
+ieNewGraphWin; imagesc(sceneRGB); axis image; axis off; truesize;
+ieNewGraphWin; imagesc(imagecell{2}); axis image; axis off; truesize;
+ieNewGraphWin; montage(imagecell);
+
+% ieNewGraphWin; montage(imagecell(1:3:end));
+
+%%
+%{
+    % GIF generation
     if dd == 1
         imagesc(srgb); axis image; axis off; truesize;
         fname = sprintf('dynamicRange-%02d-%02d.gif',HH,mm);
@@ -88,15 +103,7 @@ for dd = 1:numel(expDuration)
     end
     gif;
     %}
-    imagecell{dd} = srgb;
-end
-
-%%
-montage(imagecell);
-montage(imagecell(1:3:end));
-
-%%
-web(fname);
+% web(fname);
 
 %% 0----------
 
