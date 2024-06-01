@@ -9,7 +9,7 @@ ieInit;
 % Use the script s_downloadLightGroup to add more light group scenes
 % to this list
 
-imageID = '1114091636';
+imageID = '1114011756';
 % 1114091636 - People on street
 % 1114011756 - Vans moving away, person
 % 1113094429
@@ -125,13 +125,26 @@ oi = oiCreate;
 oi = oiCompute(oi,scene);   % oiWindow(oi);
 oi = oiCrop(oi,'border');
 oi = oiSpatialResample(oi,3,'um'); % oiWindow(oi);
-oi2 = oiCompute(oi,scene,'crop',true,'pixel size',3e-6);   % oiWindow(oi2);
-oi2 = oiSpatialResample(oi2,3,'um'); % oiWindow(oi);
+% oi2 = oiCompute(oi,scene,'crop',true,'pixel size',3e-6);   % oiWindow(oi2);
+% oi2 = oiSpatialResample(oi2,3,'um'); % oiWindow(oi);
 
 [sensor,metadata] = imx490Compute(oi,'method','average','exptime',1/10);
+
+%%
 sArray = metadata.sensorArray;
 
-% Note that the electrons match up to voltage saturation
+sensorWindow(sensor);
+
+% Note:  The ratio of electron capture makes sense.  The conversion gain,
+% however, differs so when we plot w.r.t volts the ratios are not as you
+% might naively expect.  The dv values follow volts.
+sensorWindow(sArray{1});
+sensorWindow(sArray{2});
+sensorWindow(sArray{3});
+sensorWindow(sArray{4});
+
+
+%% Note that the electrons match up to voltage saturation
 e1 = sensorGet(sArray{1},'electrons');
 e2 = sensorGet(sArray{2},'electrons');
 ieNewGraphWin; plot(e1(:),e2(:),'.');
@@ -142,9 +155,6 @@ v2 = sensorGet(sArray{2},'volts');
 ieNewGraphWin; plot(v1(:),v2(:),'.');
 identityLine; grid on;
 
-sensorWindow(sArray{1});
-sensorWindow(sArray{2});
-
 %% Make an ideal form of the image
 
 scene = sceneCreate('uniform',256);
@@ -152,17 +162,22 @@ oi = oiCreate;
 oi = oiCompute(oi,scene);   % oiWindow(oi);
 oi = oiCrop(oi,'border');
 oi = oiSpatialResample(oi, 3,'um');
-oiGet(oi,'size')
 
 % Calculate the imx490 sensor
-sensor = imx490Compute(oi,'method','average','exptime',1/10);
+sensor = imx490Compute(oi,'method','average','noiseflag',0,'exptime',1/10);
 
 % Could just do an oiGet(oi,'xyz')
 %
 % Or we can create a matched, ideal X,Y,Z sensors that can calculate
 % the XYZ values at each pixel.
 sensorI = sensorCreateIdeal('match xyz',sensor);
+sensorI = sensorSet(sensorI,'match oi',oi);
+
 sensorI = sensorCompute(sensorI,oi);
+for ii=1:numel(sensorI)
+    sensorI(ii) = sensorCompute(sensorI(ii),oi);
+end
+
 sensorWindow(sensorI(3));
 sensorGet(sensorI(1),'pixel fill factor')
 
