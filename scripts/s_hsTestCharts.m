@@ -1,4 +1,4 @@
-%% RGBW evaluation with test charts with the trained network
+Ex%% RGBW evaluation with test charts with the trained network
 %
 % See also
 %   s_hthisSensor
