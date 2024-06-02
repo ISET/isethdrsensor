@@ -29,10 +29,33 @@ for ll = 1:numel(lgt)
 end
 disp('Done loading.')
 
-%%
-wgts = [0.02, 0.1, 0.02, 0.00001]; % night
+%%  Figure out the relative intensity of the different scenes
+maxlum = zeros(1,numel(lgt));
+for ii=1:numel(lgt)
+    maxlum(ii) = sceneGet(scenes{ii},'max luminance');
+end
+mnlum = sceneGet(scenes{4},'mean luminance');
+
+% This is the ratio of the bright lights to the mean luminance of the
+% skymap scene.  We might add the scenes together so that some desired
+% ratio is preserved.
+maxlum(1) / mnlum
+sceneGet(scenes(1),'luminance dynamic range')
+
+
+%% Add
+
+% With these weights, we expand the dynamic range by quite a bit.
+%wgts = [0.02, 0.1, 0.02, 0.00001]; % night
+
+%
+wgts = [100000 0 0 1]; % night
+
 scene = sceneAdd(scenes, wgts);
 scene.metadata.wgts = wgts;
+sceneGet(scene,'luminance dynamic range')
+sceneWindow(scene);
+
 disp('Done adding')
 %% If you want, crop out the headlight region of the scene for testing
 %
@@ -209,7 +232,7 @@ sensorGet(sensorI(1),'pixel fill factor')
 
 %%
 ip = ipCreate;
-ip = ipCompute(ip,sensor);
+ip = ipCompute(ip,sensor,'hdrwhite', true);
 ipWindow(ip);
 
 input = ipGet(ip,'input');
