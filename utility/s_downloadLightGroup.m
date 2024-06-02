@@ -12,7 +12,7 @@ host = 'orange.stanford.edu';
 % Look in the metadata directory on orange
 %
 % Prepare the local directory
-imageID = '1114011756';
+imageID = '1113094429';
 % 1114091636 - People on street
 % 1114011756 - Vans moving away, person
 % 1113094429

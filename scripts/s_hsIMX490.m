@@ -9,11 +9,12 @@ ieInit;
 % Use the script s_downloadLightGroup to add more light group scenes
 % to this list
 
-imageID = '1114011756';
+imageID = '1113094429';
 % 1114091636 - People on street
 % 1114011756 - Vans moving away, person
 % 1113094429
 %
+
 lgt = {'headlights','streetlights','otherlights','skymap'};
 destPath = fullfile(isethdrsensorRootPath,'data',imageID);
 clear thisScene
@@ -52,6 +53,9 @@ switch imageID
         % This is an example crop for the headlights on the green car.
         rect = [270   351   533   528];  % 1114091636
         thisScene = sceneCrop(scene,rect);
+    case '1113094429'
+        rect = [196 58 1239 752];
+        thisScene = sceneCrop(scene,rect);
     otherwise
         error('Unknown imageID')
 end
@@ -72,11 +76,8 @@ thisScene = piAIdenoise(thisScene);
     'line mean',50, 'line sd', 20, 'line opacity',0.5,'linewidth',2);
 
 oi = oiSet(oi,'wvf zcoeffs',0,'defocus');
-oi = oiCompute(oi, thisScene,'aperture',aperture,'crop',true);
+oi = oiCompute(oi, thisScene,'aperture',aperture,'crop',true, 'pixel size',3e-6);
 
-% Required for the IMX490
-oi = oiSpatialResample(oi,3e-6);
-% oiWindow(oi);
 
 %%
 % sensor is the combined response
@@ -87,49 +88,66 @@ sArray = metadata.sensorArray;
 
 sensorWindow(sensor);
 
-% Note:  The ratio of electron capture makes sense.  The conversion gain,
-% however, differs so when we plot w.r.t volts the ratios are not as you
-% might naively expect.  The dv values follow volts.
-sensorWindow(sArray{1});
-sensorWindow(sArray{2});
-sensorWindow(sArray{3});
-sensorWindow(sArray{4});
+%%
+ip = ipCreate;
+ip = ipCompute(ip,sensor);
+ipWindow(ip);
 
-%% Various checks.
-e1 = sensorGet(sArray{1},'electrons');
-e2 = sensorGet(sArray{2},'electrons');
-ieNewGraphWin; plot(e1(:),e2(:),'.');
-identityLine; grid on;
+input = ipGet(ip,'input');
+mx = max(input(:));
 
-v1 = sensorGet(sArray{1},'volts');
-v2 = sensorGet(sArray{2},'volts');
-ieNewGraphWin; plot(v1(:),v2(:),'.');
-identityLine; grid on;
+% The contribution from the 111 goes to zero five percent away from the
+% max. So  mx -> 1, 0.95*mx -> 0 0] ->
+wgts = (input/mx - 0.95)/0.05;
+wgts = ieClip(wgts,0,1);
 
-% e3 is 1/9th the area, so 1/9th the electrons of e1
-e3 = sensorGet(sArray{3},'electrons');
-ieNewGraphWin; plot(e1(:),e3(:),'.');
-identityLine; grid on;
+%{
+ieNewGraphWin;
+imagesc(wgts);
+%}
+% We are going to replace the 'result' with 1,1,1 (smoothly)
+result = ipGet(ip,'result');
+tmp = ones(size(result));
+tmp = tmp.*wgts + result.*(1-wgts);
 
-dv1 = sensorGet(sArray{1},'dv');
-dv2 = sensorGet(sArray{2},'dv');
-ieNewGraphWin; plot(dv1(:),dv2(:),'.');
-identityLine; grid on;
+ip = ipSet(ip,'result',tmp);
+ipWindow(ip);
 
-
-%% Now try with a complex image
+%% Another image
 
 load('HDR-02-Brian','scene');
 oi = oiCreate;
-oi = oiCompute(oi,scene);   % oiWindow(oi);
-oi = oiCrop(oi,'border');
-oi = oiSpatialResample(oi,3,'um'); % oiWindow(oi);
-% oi2 = oiCompute(oi,scene,'crop',true,'pixel size',3e-6);   % oiWindow(oi2);
-% oi2 = oiSpatialResample(oi2,3,'um'); % oiWindow(oi);
+oi = oiCompute(oi,scene,'crop',true,'pixel size',3e-6);   % oiWindow(oi);
 
-[sensor,metadata] = imx490Compute(oi,'method','average','exptime',1/10);
+sensor = imx490Compute(oi,'method','average','exptime',1/30);
 
 %%
+ip = ipCreate;
+ip = ipCompute(ip,sensor);
+ipWindow(ip);
+
+input = ipGet(ip,'input');
+mx = max(input(:));
+
+% The contribution from the 111 goes to zero five percent away from the
+% max. So  mx -> 1, 0.95*mx -> 0 0] ->
+wgts = (input/mx - 0.95)/0.05;
+wgts = ieClip(wgts,0,1);
+
+%{
+ieNewGraphWin;
+imagesc(wgts);
+%}
+% We are going to replace the 'result' with 1,1,1 (smoothly)
+result = ipGet(ip,'result');
+tmp = ones(size(result));
+tmp = tmp.*wgts + result.*(1-wgts);
+
+ip = ipSet(ip,'result',tmp);
+ipWindow(ip);
+
+%%
+%{
 sArray = metadata.sensorArray;
 
 sensorWindow(sensor);
@@ -153,9 +171,10 @@ v1 = sensorGet(sArray{1},'volts');
 v2 = sensorGet(sArray{2},'volts');
 ieNewGraphWin; plot(v1(:),v2(:),'.');
 identityLine; grid on;
+%}
 
 %% Make an ideal form of the image
-
+%{
 scene = sceneCreate('uniform',256);
 oi = oiCreate;
 oi = oiCompute(oi,scene);   % oiWindow(oi);
@@ -183,6 +202,7 @@ sensorGet(sensorI(1),'pixel fill factor')
 % The sensor data and the oi data have the same vector length.  Apart from
 % maybe a pixel at one edge or the other, they should be aligned
 %
+%}
 
 %%
 [sensor,metadata] = imx490Compute(oi,'method','best snr','exptime',1/3);
@@ -190,6 +210,26 @@ sensorGet(sensorI(1),'pixel fill factor')
 %%
 ip = ipCreate;
 ip = ipCompute(ip,sensor);
+ipWindow(ip);
+
+input = ipGet(ip,'input');
+mx = max(input(:));
+
+% The contribution from the 111 goes to zero five percent away from the
+% max. So  mx -> 1, 0.95*mx -> 0 0] ->
+wgts = (input/mx - 0.95)/0.05;
+wgts = ieClip(wgts,0,1);
+
+%{
+ieNewGraphWin;
+imagesc(wgts);
+%}
+% We are going to replace the 'result' with 1,1,1 (smoothly)
+result = ipGet(ip,'result');
+tmp = ones(size(result));
+tmp = tmp.*wgts + result.*(1-wgts);
+
+ip = ipSet(ip,'result',tmp);
 ipWindow(ip);
 
 %% For the uniform case, these should be about 4x
