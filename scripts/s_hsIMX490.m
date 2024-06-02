@@ -14,7 +14,6 @@ imageID = '1114011756';
 % 1114011756 - Vans moving away, person
 % 1113094429
 %
-
 lgt = {'headlights','streetlights','otherlights','skymap'};
 destPath = fullfile(isethdrsensorRootPath,'data',imageID);
 clear thisScene
