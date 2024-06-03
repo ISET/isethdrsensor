@@ -66,11 +66,10 @@ disp('Done adding')
 %
 
 % {
-form = [1 1 511 511];
 switch imageID
     case '1114011756'
         % Focused on the person
-        rect = [890   370 0 0] + form;  % 1114011756
+        rect = [ 891   371   511   511];  
         thisScene = sceneCrop(scene,rect);
     case '1114091636'
         % This is an example crop for the headlights on the green car.
@@ -114,26 +113,6 @@ sensorWindow(sensor);
 %%
 ip = ipCreate;
 ip = ipCompute(ip,sensor);
-ipWindow(ip);
-
-input = ipGet(ip,'input');
-mx = max(input(:));
-
-% The contribution from the 111 goes to zero five percent away from the
-% max. So  mx -> 1, 0.95*mx -> 0 0] ->
-wgts = (input/mx - 0.95)/0.05;
-wgts = ieClip(wgts,0,1);
-
-%{
-ieNewGraphWin;
-imagesc(wgts);
-%}
-% We are going to replace the 'result' with 1,1,1 (smoothly)
-result = ipGet(ip,'result');
-tmp = ones(size(result));
-tmp = tmp.*wgts + result.*(1-wgts);
-
-ip = ipSet(ip,'result',tmp);
 ipWindow(ip);
 
 %% Another image
