@@ -1,25 +1,19 @@
 %% Illustrate HDR with a trained network for the AR0132at RGBW sensor
 %
-% This script reads a group of simulated scenes from the data stored
-% on acorn. The group separates the scene into four components, each
-% with a different light (headlights, streetlights, other lights,
-% skymap).  We call this representation the light gruop.
+% This script reads a group of simulated scenes from the nighttime driving
+% data stored on acorn. Each group separates the scene into four
+% components, each with a different light (headlights, streetlights, other
+% lights, skymap).  We call this representation the light gruop.
 %
-% This is the folder on acron contaning the scene groups
+% This is the folder on acron contaning the scene light groups
+%
 %   metaFolder = '/acorn/data/iset/isetauto/Ford/SceneMetadata';
 %
+% You must have the Python environment installed and the trained networks
+%   (s_python, isetDemosaicNN)
+%
 % See also
-%  s_autoLightGroups (isetauto)
-%
-% We assume you have the python miniconda environment running
-% See s_python
-%
-% pyenv('Version','/opt/miniconda3/envs/py39/bin/python');
-%
-% You can check whether it is up by running
-%
-%   pyversion
-%
+%  s_autoLightGroups (isetauto), s_python
 
 %%
 ieInit;
@@ -148,7 +142,9 @@ for ss = 1:2
       cond(qe)
     %}
 
-    expDuration = [1/15, 1/30, 1/60];
+    % Shorter durations have more noise.
+    expDuration = [1/30 1/60 1/120];
+    
     fname = cell(numel(expDuration),1);
     fprintf('Creating EXR ...');
     for dd = 1:numel(expDuration)
@@ -202,10 +198,14 @@ end
 
 %% Try some ipPlots
 
-vcSetSelectedObject('ip',3);   % RGBW
+% Note that in the dark regions, there is more noise in the RGB thasn the
+% RGBW.  Not earthshaking, but real. Mostly visible for the short duration
+% cases, where there is more noise altogether.
+
+vcSetSelectedObject('ip',7);   % RGBW
 ip = ieGetObject('ip'); [uDataRGBW,hdlRGBW] = ipPlot(ip,'horizontal line', [1,470]);
 
-vcSetSelectedObject('ip',6);   % RGB
+vcSetSelectedObject('ip',8);   % RGB
 ip = ieGetObject('ip'); [uDataRGB,hdlRGB] = ipPlot(ip,'horizontal line', [1,470]);
 
 nChildren = 3;
