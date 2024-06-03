@@ -23,15 +23,25 @@ ieInit;
 % Use the script s_downloadLightGroup to add more light group scenes
 % to this list
 
+imageID = '1113094429';
 imageID = '1114091636';
-% 1114091636 - People on street
-% 1114011756 - Vans moving away, person
-% 1113094429
-%
+imageID = '1114011756';
 
-lgt = {'headlights','streetlights','otherlights','skymap'};
-destPath = fullfile(isethdrsensorRootPath,'data',imageID);
-clear thisScene
+fname = fullfile(isethdrsensorRootPath,'local',sprintf('HDR-scenes-%s',imageID));
+load(fname,'scenes');
+oi = oiCreate('wvf');
+
+%%
+for DR = logspace(4,9,5)
+    scene = lightGroupDynamicRangeSet(scenes, DR);
+    oi = oiCompute(oi,scene,'crop',true);
+    oiWindow(oi);
+    val = oiGet(oi,'percentile illuminance',[0.1 100]);
+    disp([log10(val.lum(2)/val.lum(1)), log10(DR)])
+end
+
+% lgt = {'headlights','streetlights','otherlights','skymap'};
+
 
 %% Load up the scenes from the downloaded directory
 
