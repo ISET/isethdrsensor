@@ -4,6 +4,11 @@
 %
 % You can use s_hsScenes to create a file with the four scenes
 %
+% Then load the four light group scenes directly, as in 
+%
+% fname = fullfile(isethdrsensorRootPath,'local',sprintf('HDR-scenes-%s',imageID));
+% load(fname,'scenes');
+%
 
 %%  Choose a remote light gruop
 

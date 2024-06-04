@@ -13,19 +13,22 @@
 %   (s_python, isetDemosaicNN)
 %
 % See also
-%  s_autoLightGroups (isetauto), s_python
+%  s_autoLightGroups (isetauto), s_downloadLightGroup, s_hsScenes, s_python
 
 %%
 ieInit;
 
 %%  Specify the file
 
-% Use the script s_downloadLightGroup to add more light group scenes
-% to this list
-
+%{
 imageID = '1113094429';
 imageID = '1114091636';
 imageID = '1114011756';
+%}
+
+%% Load the four light group
+
+% lgt = {'headlights','streetlights','otherlights','skymap'};
 
 fname = fullfile(isethdrsensorRootPath,'local',sprintf('HDR-scenes-%s',imageID));
 load(fname,'scenes');
@@ -40,7 +43,6 @@ for DR = logspace(4,9,5)
     disp([log10(val.lum(2)/val.lum(1)), log10(DR)])
 end
 
-% lgt = {'headlights','streetlights','otherlights','skymap'};
 
 
 %% Load up the scenes from the downloaded directory

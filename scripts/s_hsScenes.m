@@ -1,17 +1,29 @@
 %%  Specify the file
 %
-% Use the script s_downloadLightGroup to add more light group scenes
-% to this list
+% Use the script s_downloadLightGroup to get more light group scenes
+% on your local computer.
+%
+% Then convert them to the four scenes using this script.
+%
+% Then load the four light group scenes directly, as in 
+%
+% fname = fullfile(isethdrsensorRootPath,'local',sprintf('HDR-scenes-%s',imageID));
+% load(fname,'scenes');
+% (The lgt group names are stored, too).
+%
+% See also
+%   s_autoLightGroups, s_downloadLightGroup, s_hsensorRGB
+%
 
-% Pick one
+%% Pick one
 
 % imageID = '1113094429'; rect = [196 58 1239 752];
 % imageID = '1114011756'; rect = [891 371 511 511];  
 % imageID = '1114091636'; rect = [270  351 533 528];
 
-%%
-lgt = {'headlights','streetlights','otherlights','skymap'};
+%% We store the names of the groups, too.
 
+lgt = {'headlights','streetlights','otherlights','skymap'};
 destPath = fullfile(isethdrsensorRootPath,'data',imageID);
 
 %% Load up the scenes from the downloaded directory
@@ -30,7 +42,7 @@ end
 %% Save
 
 fname = fullfile(isethdrsensorRootPath,'local',sprintf('HDR-scenes-%s',imageID));
-save(fname,'scenes');
+save(fname,'scenes','lgt');
 fprintf('Saved file: %s \n',fname)
 
 %% END

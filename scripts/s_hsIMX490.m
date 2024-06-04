@@ -4,240 +4,54 @@
 %%
 ieInit;
 
-%%  Specify the file
+%%  Specify the scene 
 
 % Use the script s_downloadLightGroup to add more light group scenes
 % to this list
 
-imageID = '1113094429';
-% 1114091636 - People on street
+imageID = '1114011756';
+% 1114091636 - Red/Green cars
 % 1114011756 - Vans moving away, person
-% 1113094429
+% 1113094429 - Cyclist in front of truck, red sky
 %
 
 lgt = {'headlights','streetlights','otherlights','skymap'};
-destPath = fullfile(isethdrsensorRootPath,'data',imageID);
-clear thisScene
 
-%% Load up the scenes from the downloaded directory
+% Cropped and denoised light group scenes
+fname = fullfile(isethdrsensorRootPath,'local',sprintf('HDR-scenes-%s',imageID));
+load(fname,'scenes');
 
-scenes = cell(numel(lgt,1));
-for ll = 1:numel(lgt)
-    thisFile = sprintf('%s_%s.exr',imageID,lgt{ll});
-    destFile = fullfile(destPath,thisFile);
-    scenes{ll} = piEXR2ISET(destFile);
-end
-disp('Done loading.')
+%% Set the dynamic range and the level of the dark region (cd/m2 = nits)
 
-%%  Figure out the relative intensity of the different scenes
-maxlum = zeros(1,numel(lgt));
-for ii=1:numel(lgt)
-    maxlum(ii) = sceneGet(scenes{ii},'max luminance');
-end
-mnlum = sceneGet(scenes{4},'mean luminance');
+DR = 10^6;
+scene = lightGroupDynamicRangeSet(scenes, DR);
+scene = sceneAdjustLuminance(scene,'median',10);
 
-% This is the ratio of the bright lights to the mean luminance of the
-% skymap scene.  We might add the scenes together so that some desired
-% ratio is preserved.
-maxlum(1) / mnlum
-sceneGet(scenes(1),'luminance dynamic range')
+ieAddObject(scene);
 
+%% Compute with some optics
 
-%% Add
-
-% With these weights, we expand the dynamic range by quite a bit.
-%wgts = [0.02, 0.1, 0.02, 0.00001]; % night
-
-%
-wgts = [100000 0 0 1]; % night
-
-scene = sceneAdd(scenes, wgts);
-scene.metadata.wgts = wgts;
-sceneGet(scene,'luminance dynamic range')
-sceneWindow(scene);
-
-disp('Done adding')
-%% If you want, crop out the headlight region of the scene for testing
-%
-% You can crop in the window, get the scene, and find the crop.  The
-% rect will be attached to the scene object.
-%
-%   sceneHeadlight = ieGetObject('scene');
-%
-
-% {
-switch imageID
-    case '1114011756'
-        % Focused on the person
-        rect = [ 891   371   511   511];  
-        thisScene = sceneCrop(scene,rect);
-    case '1114091636'
-        % This is an example crop for the headlights on the green car.
-        rect = [270   351   533   528];  % 1114091636
-        thisScene = sceneCrop(scene,rect);
-    case '1113094429'
-        rect = [196 58 1239 752];
-        thisScene = sceneCrop(scene,rect);
-    otherwise
-        error('Unknown imageID')
-end
-disp('Done cropping')
-%}
-
-%%
-if ~exist('thisScene','var'), thisScene = scene; end
-
-fprintf('Denoising ...');
-thisScene = piAIdenoise(thisScene);
-% sceneWindow(thisScene);
-
-%%
 [oi,wvf] = oiCreate('wvf');
 [aperture, params] = wvfAperture(wvf,'nsides',3,...
     'dot mean',50, 'dot sd',20, 'dot opacity',0.5,'dot radius',5,...
     'line mean',50, 'line sd', 20, 'line opacity',0.5,'linewidth',2);
 
 oi = oiSet(oi,'wvf zcoeffs',0,'defocus');
-oi = oiCompute(oi, thisScene,'aperture',aperture,'crop',true, 'pixel size',3e-6);
+oi = oiCompute(oi, scene,'aperture',aperture,'crop',true, 'pixel size',3e-6);
 
+%% Sensor is the combined response from the 4 pixels
 
-%%
-% sensor is the combined response
-[sensor,metadata] = imx490Compute(oi,'method','average','exptime',1/10);
+% The exposure duration matters a great deal. If it is short, we have
+% too few photons in the dark region of the image.
 
-% For the HDR car scene use exptime of 0.1 sec
-sArray = metadata.sensorArray;
-
-sensorWindow(sensor);
-
-%%
 ip = ipCreate;
-ip = ipCompute(ip,sensor);
-ipWindow(ip);
-
-%% Another image
-
-load('HDR-02-Brian','scene');
-oi = oiCreate;
-oi = oiCompute(oi,scene,'crop',true,'pixel size',3e-6);   % oiWindow(oi);
-
-sensor = imx490Compute(oi,'method','average','exptime',1/30);
-
-%%
-ip = ipCreate;
-ip = ipCompute(ip,sensor);
-ipWindow(ip);
-
-input = ipGet(ip,'input');
-mx = max(input(:));
-
-% The contribution from the 111 goes to zero five percent away from the
-% max. So  mx -> 1, 0.95*mx -> 0 0] ->
-wgts = (input/mx - 0.95)/0.05;
-wgts = ieClip(wgts,0,1);
-
-%{
-ieNewGraphWin;
-imagesc(wgts);
-%}
-% We are going to replace the 'result' with 1,1,1 (smoothly)
-result = ipGet(ip,'result');
-tmp = ones(size(result));
-tmp = tmp.*wgts + result.*(1-wgts);
-
-ip = ipSet(ip,'result',tmp);
-ipWindow(ip);
-
-%%
-%{
-sArray = metadata.sensorArray;
-
-sensorWindow(sensor);
-
-% Note:  The ratio of electron capture makes sense.  The conversion gain,
-% however, differs so when we plot w.r.t volts the ratios are not as you
-% might naively expect.  The dv values follow volts.
-sensorWindow(sArray{1});
-sensorWindow(sArray{2});
-sensorWindow(sArray{3});
-sensorWindow(sArray{4});
-
-
-%% Note that the electrons match up to voltage saturation
-e1 = sensorGet(sArray{1},'electrons');
-e2 = sensorGet(sArray{2},'electrons');
-ieNewGraphWin; plot(e1(:),e2(:),'.');
-identityLine; grid on;
-
-v1 = sensorGet(sArray{1},'volts');
-v2 = sensorGet(sArray{2},'volts');
-ieNewGraphWin; plot(v1(:),v2(:),'.');
-identityLine; grid on;
-%}
-
-%% Make an ideal form of the image
-%{
-scene = sceneCreate('uniform',256);
-oi = oiCreate;
-oi = oiCompute(oi,scene);   % oiWindow(oi);
-oi = oiCrop(oi,'border');
-oi = oiSpatialResample(oi, 3,'um');
-
-% Calculate the imx490 sensor
-sensor = imx490Compute(oi,'method','average','noiseflag',0,'exptime',1/10);
-
-% Could just do an oiGet(oi,'xyz')
-%
-% Or we can create a matched, ideal X,Y,Z sensors that can calculate
-% the XYZ values at each pixel.
-sensorI = sensorCreateIdeal('match xyz',sensor);
-sensorI = sensorSet(sensorI,'match oi',oi);
-
-sensorI = sensorCompute(sensorI,oi);
-for ii=1:numel(sensorI)
-    sensorI(ii) = sensorCompute(sensorI(ii),oi);
+for eTime = [60/120 15/120,4/120,1/120]
+    sensor = imx490Compute(oi,'method','average','exptime',eTime);
+    sensor = sensorSet(sensor,'name',sprintf('Combined-ave-%.3f',eTime));
+    % sensorWindow(sensor);
+    ip = ipCompute(ip,sensor);
+    % ip = ipHDRWhite(ip);
+    ipWindow(ip);
 end
 
-sensorWindow(sensorI(3));
-sensorGet(sensorI(1),'pixel fill factor')
-
-% The sensor data and the oi data have the same vector length.  Apart from
-% maybe a pixel at one edge or the other, they should be aligned
-%
-%}
-
 %%
-[sensor,metadata] = imx490Compute(oi,'method','best snr','exptime',1/3);
-
-%%
-ip = ipCreate;
-ip = ipCompute(ip,sensor,'hdrwhite', true);
-ipWindow(ip);
-
-input = ipGet(ip,'input');
-mx = max(input(:));
-
-% The contribution from the 111 goes to zero five percent away from the
-% max. So  mx -> 1, 0.95*mx -> 0 0] ->
-wgts = (input/mx - 0.95)/0.05;
-wgts = ieClip(wgts,0,1);
-
-%{
-ieNewGraphWin;
-imagesc(wgts);
-%}
-% We are going to replace the 'result' with 1,1,1 (smoothly)
-result = ipGet(ip,'result');
-tmp = ones(size(result));
-tmp = tmp.*wgts + result.*(1-wgts);
-
-ip = ipSet(ip,'result',tmp);
-ipWindow(ip);
-
-%% For the uniform case, these should be about 4x
-uData1 = sensorPlot(sArray{1},'electrons hline',[55 1]);
-sensorPlot(sArray{2},'electrons hline',[55 1]);
-
-% These are OK.  A factor of 4.
-uData2 = sensorPlot(sArray{3},'electrons hline',[150 1]);
-sensorPlot(sArray{4},'electrons hline',[150 1]);
