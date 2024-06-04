@@ -1,5 +1,5 @@
 %%  Specify the file
-
+%
 % Use the script s_downloadLightGroup to add more light group scenes
 % to this list
 

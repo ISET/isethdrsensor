@@ -1,6 +1,9 @@
 %% How to download a light group
 %
-% The light group will be downloaded into
+% The light group will be downloaded into your local directory
+%
+% You can use s_hsScenes to create a file with the four scenes
+%
 
 %%  Choose a remote light gruop
 
@@ -12,11 +15,17 @@ host = 'orange.stanford.edu';
 % Look in the metadata directory on orange
 %
 % Prepare the local directory
-imageID = '1113094429';
+imageID = '1112220258';
+% 1114034742 - Motorcyle, people walking not very nice
 % 1114091636 - People on street
 % 1114011756 - Vans moving away, person
-% 1113094429
-%
+% 1113094429 - Truck and nice late afternoon
+% 1112201236 - Open highway scene
+% 1113042919 - Blue car, person, motorcyle, yellow bus
+% 1112213036 - Lousy.
+% 1113040557 - Lousy.  Truck and people
+% 1113051533 - Hard to get light levels right
+% 1112220258
 
 lgt = {'headlights','streetlights','otherlights','skymap'};
 destPath = fullfile(isethdrsensorRootPath,'data',imageID);
@@ -40,3 +49,5 @@ for ll = 1:numel(lgt)
 end
 
 %%
+
+%% END
