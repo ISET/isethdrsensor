@@ -9,9 +9,9 @@ ieInit;
 % Use the script s_downloadLightGroup to add more light group scenes
 % to this list
 
-imageID = '1114011756';
+imageID = '1113094429';
 % 1114091636 - Red/Green cars
-% 1114011756 - Vans moving away, person
+% 1114011756 - Vans moving away, person crossing with purse
 % 1113094429 - Cyclist in front of truck, red sky
 %
 
@@ -23,10 +23,10 @@ load(fname,'scenes');
 
 %% Set the dynamic range and the level of the dark region (cd/m2 = nits)
 
-DR = 10^6;
+DR = 10^4;
 scene = lightGroupDynamicRangeSet(scenes, DR);
 scene = sceneAdjustLuminance(scene,'median',10);
-
+scene = sceneSet(scene,'fov',50);   % I cropped the big scene down.
 ieAddObject(scene);
 
 %% Compute with some optics
@@ -51,6 +51,28 @@ for eTime = [60/120 15/120,4/120,1/120]
     % sensorWindow(sensor);
     ip = ipCompute(ip,sensor);
     % ip = ipHDRWhite(ip);
+    ipWindow(ip);
+end
+
+
+%% Sony sensor 
+
+sensor = sensorCreate('imx363');
+sensor = sensorSet(sensor,'match oi',oi);
+
+% The exposure duration matters a great deal. If it is short, we have
+% too few photons in the dark region of the image.
+
+%%
+autoTime  = autoExposure(oi,sensor,0.95,'luminance');
+
+for eTime = autoTime*logspace(-0.5,1,5)
+    sensor = sensorSet(sensor,'exp time',eTime);
+    sensor = sensorCompute(sensor,oi);
+    sensor = sensorSet(sensor,'name',sprintf('Combined-ave-%.3f',eTime));
+    % sensorWindow(sensor);
+    ip = ipCompute(ip,sensor,'hdr white', false);
+    [ip, wgts] = ipHDRWhite(ip,'saturation',sensorGet(sensor,'max digital'),'wgtblur',2);
     ipWindow(ip);
 end
 
