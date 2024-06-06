@@ -1,8 +1,8 @@
-function [combinedScene, wgts] = lightGroupDynamicRangeSet(scenes, DR)
+function [combinedScene, wgts] = lightGroupDynamicRangeSet(scenes, DR, lowlightlevel)
 % lightGroupDynamicRangeSet Adjusts the luminance of different light groups to set the dynamic range for the final scene.
 %
 % Synopsis
-%   [combinedScene, wgts] = lightGroupDynamicRangeSet(scenes, DR)
+%   [combinedScene, wgts] = lightGroupDynamicRangeSet(scenes, DR, [lowlightlevel])
 %
 % Brief
 %   When we assemble a scene from the light groups, we would like to
@@ -15,6 +15,7 @@ function [combinedScene, wgts] = lightGroupDynamicRangeSet(scenes, DR)
 %       LightGroupScenes = {'headlights', 'streetlights', 'otherlights', 'skymap'};
 %   DR - Desired dynamic range for the combined scene.  Specified in
 %        linear units (e.g., 10^4), not in logarithmic units
+%  
 %
 % Outputs:
 %   wgts - Weights for adjusting the luminance of each light group.
@@ -28,6 +29,11 @@ function [combinedScene, wgts] = lightGroupDynamicRangeSet(scenes, DR)
 % See also
 %   s_autoLightGroups (isetauto)
 
+%% Probably should be parser.
+
+if notDefined('scenes'),        error('Scenes required.');        end
+if notDefined('DR'),            error('Dynamic range required.'); end
+if notDefined('lowlightlevel'), lowlightlevel = 10;               end  % NITS
 
 %% Headlights
 
@@ -100,6 +106,8 @@ wgts(4) = meanLumForSkylight / currentL;
 %% Combine the scenes
 % Combine the scenes with the calculated weights
 combinedScene = sceneAdd(scenes, wgts);
+
+combinedScene = sceneAdjustLuminance(combinedScene,'median',lowlightlevel);
 
 % Store the weights in the metadata of the combined scene
 combinedScene.metadata.wgts = wgts;
