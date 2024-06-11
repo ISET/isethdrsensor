@@ -1,33 +1,52 @@
 function [combinedScene, wgts] = lightGroupDynamicRangeSet(scenes, DR, lowlightlevel)
-% lightGroupDynamicRangeSet Adjusts the luminance of different light groups to set the dynamic range for the final scene.
+% Combine light groups to achieve a scene dynamic range and low light level
 %
 % Synopsis
 %   [combinedScene, wgts] = lightGroupDynamicRangeSet(scenes, DR, [lowlightlevel])
 %
-% Brief
-%   When we assemble a scene from the light groups, we would like to
-%   be able to control the final dynamic range.  This routine lets you
-%   get closer to that dynamic range.  The values are not perfect,
-%   just a guide.  
+% Brief:
+%   When we assemble a scene from the four light groups, we would like
+%   to control the final dynamic range and the low light level (median
+%   luminance in the dark region).  This routine sets the weights to
+%   approximate a dynamic range. The result is not perfect, but it is
+%   close.
 %
 % Inputs:
 %   scenes - A cell array containing different light scenes.
 %       LightGroupScenes = {'headlights', 'streetlights', 'otherlights', 'skymap'};
+%
 %   DR - Desired dynamic range for the combined scene.  Specified in
 %        linear units (e.g., 10^4), not in logarithmic units
-%  
+%
+%   lowlightlevel - Luminance in the dark region of the HDR image.
+%                   Implemented by adjusting the luminance so the
+%                   median is at this level.  The idea is that the
+%                   bright lights are a small fraction of the image.
 %
 % Outputs:
-%   wgts - Weights for adjusting the luminance of each light group.
-%   combinedScene - The final combined scene with adjusted luminance.
+%   wgts          - Weights for combining the light groups.
+%   combinedScene - The final scene.  You can get its true dynamic
+%                   range and median using
+%                      sceneGet(scene,'dynamic range log10')
+%                      sceneGet(scene,'median luminance')
 % 
-% Note:
-%   This method assumes visible light sources in light groups, if the light
-%   sources are not directly visible, the method may fail. We might check
-%   whether there are visible light sources by a threshold value.
+% Description:
+%   This calculation is based on the assumption that there are visible
+%   light sources in light groups. In that case, the brightest regions
+%   in the scene are the light sources themselves.  And we know
+%   something about the general level of those sources (see the
+%   tables in the code).
+%
+%   If this assumption is false, so that we are seeing a part of the
+%   that is illuminated by a light source, but the source itself is
+%   not visible, the calculation will return but not be right.
+% 
+%   In the future, we might check whether there are visible light
+%   sources by a threshold value.
 %
 % See also
 %   s_autoLightGroups (isetauto)
+%   s_downloadLightGroups (isethdrsensor)
 
 %% Probably should be parser.
 
