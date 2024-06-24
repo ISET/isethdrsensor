@@ -9,6 +9,8 @@
 % fname = fullfile(isethdrsensorRootPath,'local',sprintf('HDR-scenes-%s',imageID));
 % load(fname,'scenes');
 %
+% '/acorn/data/iset/isetauto/Ford/SceneMetadata'
+%
 
 %%  Choose a remote light gruop
 
@@ -20,7 +22,7 @@ host = 'orange.stanford.edu';
 % Look in the metadata directory on orange
 %
 % Prepare the local directory
-imageID = '1112220258';
+imageID = '1113165019';
 % 1114034742 - Motorcyle, people walking not very nice
 % 1114091636 - People on street
 % 1114011756 - Vans moving away, person
@@ -31,7 +33,11 @@ imageID = '1112220258';
 % 1113040557 - Lousy.  Truck and people
 % 1113051533 - Hard to get light levels right
 % 1112220258
-
+% 1113164929
+% 1113165019
+% 1114043928
+% 1114120530 - Lady on a motorcycle in front of a truck
+%
 lgt = {'headlights','streetlights','otherlights','skymap'};
 destPath = fullfile(isethdrsensorRootPath,'data',imageID);
 
@@ -45,7 +51,7 @@ src  = fullfile(metaFolder,[imageID,'.mat']);
 ieSCP(user,host,src,destPath);
 load(fullfile(destPath,[imageID,'.mat']),'sceneMeta');
 
-% The the radiance EXR files
+% The radiance EXR files in the light grup
 for ll = 1:numel(lgt)
     thisFile = sprintf('%s_%s.exr',imageID,lgt{ll});
     srcFile  = fullfile(sceneMeta.datasetFolder,thisFile);
