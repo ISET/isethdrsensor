@@ -1,4 +1,5 @@
 %%  Specify the file
+type(mfilename)
 
 % 1114034742 - Motorcyle, people walking not very nice
 % 1114091636 - People on street

@@ -4,7 +4,7 @@
 %%
 ieInit;
 
-
+hsSceneDescriptions
 imageID = '1114120530';
 
 
@@ -22,7 +22,7 @@ for DR = logspace(4,9,5)
     oi = oiCompute(oi,scene,'crop',true);
     oiWindow(oi);
     val = oiGet(oi,'percentile illuminance',[0.1 100]);
-    disp([log10(val.lum(2)/val.lum(1)), log10(DR)])
+    disp([log10(val.lum(2)/abs(val.lum(1))), log10(DR)])
 end
 
 
