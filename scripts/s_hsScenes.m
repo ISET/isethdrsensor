@@ -28,29 +28,14 @@
 
 % imageID = '1113094429'; rect = [196 58 1239 752];
 % imageID = '1114011756'; rect = [891 371 511 511];  
-% imageID = '1114091636'; rect = [270  351 533 528];
-% imageID = '1114120530'; rect = [270  351 533 528];
-% imageID = '1114043928'; rect = [10  10  540  640];
-% imageID = '1113165019'; rect = [256 256  768 512];
-% imageID = '1113164929'; rect = [256 256  768 512];
-% imageID = '1112220258'; rect = [256 256  768 512];
+% imageID = '1114091636'; rect = [270 351 533 528];
+% imageID = '1114120530'; rect = [270 351 533 528];
+% imageID = '1114043928'; rect = [256 256 540 640];
+% imageID = '1113165019'; rect = [256 256 768 512];
+% imageID = '1113164929'; rect = [256 256 768 512];
+% imageID = '1112220258'; rect = [256 256 768 512];
 
-
-
-% 1114034742 - Motorcyle, people walking not very nice
-% 1114091636 - People on street
-% 1114011756 - Vans moving away, person
-% 1113094429 - Truck and nice late afternoon
-% 1112201236 - Open highway scene
-% 1113042919 - Blue car, person, motorcyle, yellow bus
-% 1112213036 - Lousy.
-% 1113040557 - Lousy.  Truck and people
-% 1113051533 - Hard to get light levels right
-% 1112220258 - Curved road with trucks and bicycles and lights
-% 1113164929 - One car, one bike, mountain in the road? 
-% 1113165019 - Wide, complex highway scene.  Big sky
-% 1114043928 - Man in front of the sky
-% 1114120530 - Woman in front of a truck
+% hsSceneDescriptions;
 
 %% We store the names of the groups, too.
 
@@ -86,7 +71,7 @@ load(fname,'scenes');
 % And then you can create a scene with a specific dynamic range and low
 % light level using
 %
-dynamicRange = 10^6;
+dynamicRange = 10^5;
 lowLight = 10;
 scene = lightGroupDynamicRangeSet(scenes, dynamicRange, lowLight);
 scene = sceneSet(scene,'fov',20);   % I cropped the big scene down.

@@ -1,105 +1,75 @@
 %% Make a figure comparing the different types of sensors
 %
 % For a couple of scenes, render them through some kind of optics onto the
+%
+% Here are the scenes.  Refresh from time to time.
+%
+%   hsSceneDescriptions;
+%
+% 1114034742 - Motorcyle, people walking not very nice
+% 1114091636 - People on street
+% 1114011756 - Vans moving away, person
+% 1113094429 - Truck and nice late afternoon
+% 1112201236 - Open highway scene
+% 1113042919 - Blue car, person, motorcyle, yellow bus
+% 1112213036 - Lousy.
+% 1113040557 - Lousy.  Truck and people
+% 1113051533 - Hard to get light levels right
+% 1112220258 - Curved road with trucks and bicycles and lights
+% 1113164929 - One car, one bike, mountain in the road? 
+% 1113165019 - Wide, complex highway scene.  Big sky
+% 1114043928 - Man in front of the sky
+% 1114120530 - Woman in front of a truck
+%
+% The light group names
+%   lgt = {'headlights','streetlights','otherlights','skymap'};
+
 %%
 ieInit;
 
-hsSceneDescriptions
-imageID = '1114120530';
-
+%%
+imageID = '1114091636';
 
 %% Load the four light group
 
-% lgt = {'headlights','streetlights','otherlights','skymap'};
-
 fname = fullfile(isethdrsensorRootPath,'local',sprintf('HDR-scenes-%s',imageID));
 load(fname,'scenes');
-oi = oiCreate('wvf');
 
-%%
-for DR = logspace(4,9,5)
-    scene = lightGroupDynamicRangeSet(scenes, DR);
-    oi = oiCompute(oi,scene,'crop',true);
-    oiWindow(oi);
-    val = oiGet(oi,'percentile illuminance',[0.1 100]);
-    disp([log10(val.lum(2)/abs(val.lum(1))), log10(DR)])
-end
+%% Create a scene
 
-
-
-%% Load up the scenes from the downloaded directory
-
-scenes = cell(numel(lgt,1));
-for ll = 1:numel(lgt)
-    thisFile = sprintf('%s_%s.exr',imageID,lgt{ll});
-    destFile = fullfile(destPath,thisFile);
-    scenes{ll} = piEXR2ISET(destFile);
-end
-disp('Done loading.')
-
-%%  Create a merged radiance scene
-% head, street, other, sky
-% wgts = [0.1, 0.1, 0.02, 0.001]; % night
-
-wgts = [0.02, 0.1, 0.02, 0.00001]; % night
-scene = sceneAdd(scenes, wgts);
-scene.metadata.wgts = wgts;
-disp('Done adding')
-%% If you want, crop out the headlight region of the scene for testing
-%
-% You can crop in the window, get the scene, and find the crop.  The
-% rect will be attached to the scene object.
-%
-%   sceneHeadlight = ieGetObject('scene');
-%
-
-% {
-form = [1 1 511 511];
-switch imageID
-    case '1114011756'
-        % Focused on the person
-        rect = [890   370 0 0] + form;  % 1114011756
-        thisScene = sceneCrop(scene,rect);
-    case '1114091636'
-        % This is an example crop for the headlights on the green car.
-        rect = [270   351   533   528];  % 1114091636
-        thisScene = sceneCrop(scene,rect);
-    otherwise
-        error('Unknown imageID')
-end
-disp('Done cropping')
-%}
-
-%% We could convert the scene via wvf in various ways
-if ~exist('thisScene','var'), thisScene = scene; end
-
-fprintf('Denoising ...');
-thisScene = piAIdenoise(thisScene);
-% sceneWindow(thisScene);
+DR = 10^5;
+lowLight = 1;
+scene = lightGroupDynamicRangeSet(scenes, DR,lowLight);
+sceneWindow(scene);
 
 %% Blur and flare
-
 [oi,wvf] = oiCreate('wvf');
 [aperture, params] = wvfAperture(wvf,'nsides',3,...
     'dot mean',50, 'dot sd',20, 'dot opacity',0.5,'dot radius',5,...
     'line mean',50, 'line sd', 20, 'line opacity',0.5,'linewidth',2);
-
 oi = oiSet(oi,'wvf zcoeffs',0,'defocus');
-oi = oiCompute(oi, thisScene,'aperture',aperture,'crop',true);
-
-%{
+oi = oiCompute(oi, scene,'aperture',aperture,'crop',true,'pixel size',3e-6);
 oiWindow(oi);
-oi = oiSet(oi,'render flag','hdr');
-oi = oiSet(oi,'gamma',1);
-%}
 
-%%  Create the ip and the default ISETAuto sensor
+%% First show the imx363
 
-exrDir = fullfile(isethdrsensorRootPath,'local','exr',string(datetime('today')));
-if ~exist(exrDir,'dir'), mkdir(exrDir); end
+sensor363 = sensorCreate('imx363');
+sensor363 = sensorSet(sensor363,'match oi',oi);
+sensor363 = sensorSet(sensor363,'exp time',2e-3);
+sensor363 = sensorCompute(sensor363,oi);
+sensorWindow(sensor363);
+sensorGet(sensor363,'exp time','ms')
 
-% Note the hour and time
-[HH,mm] = hms(datetime('now'));
+sensorAR = sensorCreate('ar0132at',[],'rgbw');
+sensorAR = sensorSet(sensorAR,'match oi',oi);
+sensor363 = sensorSet(sensor363,'exp time',2e-3);
+sensorAR = sensorCompute(sensorAR,oi);
+sensorGet(sensorAR,'exp time','ms')
+sensorWindow(sensorAR);
+
+[imx490, metadata] = imx490Compute(oi,'exp time',2e-3);
+sensorGet(imx490,'exp time','ms')
+sensorWindow(imx490);
 
 %% Turn off the noise and recompute
 
@@ -111,11 +81,6 @@ sensor = sensorCompute(sensor,oi);
 ip = ipCompute(ip,sensor);
 ipWindow(ip);
 %}
-
-%%  Create the two sensor
-
-sensorRGBW = sensorCreate('ar0132at',[],'rgbw');
-sensorRGB = sensorCreate('ar0132at',[],'rgb');
 
 %% For each sensor
 for ss = 1:2
