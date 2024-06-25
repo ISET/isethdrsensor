@@ -3,77 +3,62 @@
 % Use the script s_downloadLightGroup to get more light group scenes
 % on your local computer.
 %
-% Then convert them to the four scenes using this script.
+% Then convert them to the four scenes and the metadata using this
+% script. The scenes are also stored in isethdrsensor/data
 %
-% When you are ready to use these files, you can load the four light group
-% scenes directly, as in
+% To create a specific scene use
 %
-%   fname = fullfile(isethdrsensorRootPath,'local',sprintf('HDR-scenes-%s',imageID));
-%   load(fname,'scenes');
-%
-% And then you can create a scene with a specific dynamic range and low
-% light level using
+%  fname = fullfile(isethdrsensorRootPath,'data',sprintf('HDR-scenes-%s',imageID));
+%  load(fname,'scenes','sceneMeta);
 %
 %  dynamicRange = 10^4;
 %  lowLight = 10;
 %  scene = lightGroupDynamicRangeSet(scenes, dynamicRange, lowLight);
 %  scene = sceneSet(scene,'fov',20);   % I cropped the big scene down.
-%  ieAddObject(scene);
+%  scene = sceneSet(scene,'depth map',sceneMeta.depthMap);
+%  rmfield(sceneMeta,'depthMap');
+%  metadata = sceneMeta;
+%  scene = sceneSet(scene,'metadata',metadata);
+%  sceneWindow(scene);
 %
 % See also
 %   s_autoLightGroups, s_downloadLightGroup, s_hsensorRGB
 %
 
-%% Pick one
+%% See what is downloaded
 
 lgt = {'headlights','streetlights','otherlights','skymap'};
-lst = hsSceneDescriptions;
+lstDir = fullfile(isethdrsensorRootPath,'data');
+lst = dir(fullfile(lstDir,'11*'));
 
+%%
 for ii=1:numel(lst)
 
-    imageID = lst(ii).id;
-    rect = lst(ii).rect;
-    %% We store the names of the groups, too.
+    fname = fullfile(isethdrsensorRootPath,'data',sprintf('HDR-scenes-%s',imageID));
 
-    destPath = fullfile(isethdrsensorRootPath,'data',imageID);
+    if ~exist(fname,'file')
+        imageID = lst(ii).name;
+        load(fullfile(lstDir,imageID,[imageID,'.mat']),'sceneMeta');
 
-    %% Load up the scenes from the downloaded directory
+        % We store the names of the groups, too.
+        destPath = fullfile(isethdrsensorRootPath,'data',imageID);
 
-    scenes = cell(numel(lgt,1));
-    for ll = 1:numel(lgt)
-        thisFile = sprintf('%s_%s.exr',imageID,lgt{ll});
-        if ~exist(thisFile,'file'), error('Input file missing'); end                
-        scenes{ll} = piEXR2ISET(thisFile);
+        %% Load up the 4 scenes from the downloaded directory
+        scenes = cell(numel(lgt,1));
+        for ll = 1:numel(lgt)
+            thisFile = sprintf('%s_%s.exr',imageID,lgt{ll});
+            if ~exist(thisFile,'file'), error('Input file missing'); end
+            scenes{ll} = piEXR2ISET(thisFile);
+        end
 
-        % No cropping?
-        scenes{ll} = sceneCrop(scenes{ll},rect);
-        % sceneWindow(scenes{ll}); sceneSet(scenes{ll},'render flag','hdr');
+        %% Save
+        save(fname,'scenes','sceneMeta','lgt');
+        fprintf('Saved file: %s \n',fname)
+    else
+        fprintf('%s exists\n',fname);
     end
 
-
-    %% Save
-
-    fname = fullfile(isethdrsensorRootPath,'local',sprintf('HDR-scenes-%s',imageID));
-    save(fname,'scenes','lgt');
-    fprintf('Saved file: %s \n',fname)
-
-    %% Load it and look at it
-
-    % {
-    fname = fullfile(isethdrsensorRootPath,'local',sprintf('HDR-scenes-%s',imageID));
-    load(fname,'scenes');
-    %
-    % And then you can create a scene with a specific dynamic range and low
-    % light level using
-    %
-    dynamicRange = 10^(5 + rand(1) - 0.5);
-    lowLight = 10 + 5*(rand(1) - 0.5);
-    scene = lightGroupDynamicRangeSet(scenes, dynamicRange, lowLight);
-    scene = piAIdenoise(scene);
-    scene = sceneSet(scene,'fov',20);   % I cropped the big scene down.
-    % sceneWindow(scene);
-    %}
-
 end
+
 
 %% END

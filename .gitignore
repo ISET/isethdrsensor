@@ -1,5 +1,6 @@
 local/*
 data/111*
+data/HDR-scenes-*
 *.asv
 /__pycache__
 *pycache*
