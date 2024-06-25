@@ -1,4 +1,4 @@
-%%  Specify the file
+%% Create HDR scene from light groups
 %
 % Use the script s_downloadLightGroup to get more light group scenes
 % on your local computer.
@@ -26,56 +26,54 @@
 
 %% Pick one
 
-% imageID = '1113094429'; rect = [196 58 1239 752];
-% imageID = '1114011756'; rect = [891 371 511 511];  
-% imageID = '1114091636'; rect = [270 351 533 528];
-% imageID = '1114120530'; rect = [270 351 533 528];
-% imageID = '1114043928'; rect = [256 256 540 640];
-% imageID = '1113165019'; rect = [256 256 768 512];
-% imageID = '1113164929'; rect = [256 256 768 512];
-% imageID = '1112220258'; rect = [256 256 768 512];
-
-% hsSceneDescriptions;
-
-%% We store the names of the groups, too.
-
 lgt = {'headlights','streetlights','otherlights','skymap'};
-destPath = fullfile(isethdrsensorRootPath,'data',imageID);
+lst = hsSceneDescriptions;
 
-%% Load up the scenes from the downloaded directory
+for ii=1:numel(lst)
 
-scenes = cell(numel(lgt,1));
-for ll = 1:numel(lgt)
-    thisFile = sprintf('%s_%s.exr',imageID,lgt{ll});
-    destFile = fullfile(destPath,thisFile);
-    scenes{ll} = piEXR2ISET(destFile);
+    imageID = lst(ii).id;
+    rect = lst(ii).rect;
+    %% We store the names of the groups, too.
 
-    scenes{ll} = sceneCrop(scenes{ll},rect);
-    scenes{ll} = piAIdenoise(scenes{ll});
-    % sceneWindow(scenes{ll}); sceneSet(scenes{ll},'render flag','hdr');
+    destPath = fullfile(isethdrsensorRootPath,'data',imageID);
+
+    %% Load up the scenes from the downloaded directory
+
+    scenes = cell(numel(lgt,1));
+    for ll = 1:numel(lgt)
+        thisFile = sprintf('%s_%s.exr',imageID,lgt{ll});
+        destFile = fullfile(destPath,thisFile);
+        scenes{ll} = piEXR2ISET(destFile);
+
+        % No cropping?
+        scenes{ll} = sceneCrop(scenes{ll},rect);
+        % sceneWindow(scenes{ll}); sceneSet(scenes{ll},'render flag','hdr');
+    end
+
+
+    %% Save
+
+    fname = fullfile(isethdrsensorRootPath,'local',sprintf('HDR-scenes-%s',imageID));
+    save(fname,'scenes','lgt');
+    fprintf('Saved file: %s \n',fname)
+
+    %% Load it and look at it
+
+    % {
+    fname = fullfile(isethdrsensorRootPath,'local',sprintf('HDR-scenes-%s',imageID));
+    load(fname,'scenes');
+    %
+    % And then you can create a scene with a specific dynamic range and low
+    % light level using
+    %
+    dynamicRange = 10^(5 + rand(1) - 0.5);
+    lowLight = 10 + 5*(rand(1) - 0.5);
+    scene = lightGroupDynamicRangeSet(scenes, dynamicRange, lowLight);
+    scene = piAIdenoise(scene);
+    scene = sceneSet(scene,'fov',20);   % I cropped the big scene down.
+    % sceneWindow(scene);
+    %}
+
 end
-
-
-%% Save
-
-fname = fullfile(isethdrsensorRootPath,'local',sprintf('HDR-scenes-%s',imageID));
-save(fname,'scenes','lgt');
-fprintf('Saved file: %s \n',fname)
-
-%% Load it and look at it
-
-%{
-fname = fullfile(isethdrsensorRootPath,'local',sprintf('HDR-scenes-%s',imageID));
-load(fname,'scenes');
-%
-% And then you can create a scene with a specific dynamic range and low
-% light level using
-%
-dynamicRange = 10^5;
-lowLight = 10;
-scene = lightGroupDynamicRangeSet(scenes, dynamicRange, lowLight);
-scene = sceneSet(scene,'fov',20);   % I cropped the big scene down.
-sceneWindow(scene);
-%}
 
 %% END

@@ -58,11 +58,22 @@ sensor363 = sensorSet(sensor363,'match oi',oi);
 sensor363 = sensorSet(sensor363,'exp time',2e-3);
 sensor363 = sensorCompute(sensor363,oi);
 sensorWindow(sensor363);
-sensorGet(sensor363,'exp time','ms')
+sensorPlot(sensor363,'color filters');
+set(gca,'xlim',[400 700],'ylim',[0,1]);
+
+rgb = sensorGet(sensor363,'color filters');
+wave363 = sensorGet(sensor363,'wave');
 
 sensorAR = sensorCreate('ar0132at',[],'rgbw');
 sensorAR = sensorSet(sensorAR,'match oi',oi);
-sensor363 = sensorSet(sensor363,'exp time',2e-3);
+sensorAR = sensorSet(sensorAR,'exp time',2e-3);
+rgbw = sensorGet(sensorAR,'color filters');
+waveAR = sensorGet(sensorAR,'wave');
+tmp = interp1(wave363,rgb,waveAR); rgbw(:,1:3) = tmp;
+sensorAR = sensorSet(sensorAR,'color filters',rgbw);
+sensorPlot(sensorAR,'color filters');
+set(gca,'xlim',[400 700],'ylim',[0,1]);
+
 sensorAR = sensorCompute(sensorAR,oi);
 sensorGet(sensorAR,'exp time','ms')
 sensorWindow(sensorAR);
@@ -70,6 +81,9 @@ sensorWindow(sensorAR);
 [imx490, metadata] = imx490Compute(oi,'exp time',2e-3);
 sensorGet(imx490,'exp time','ms')
 sensorWindow(imx490);
+
+sensorPlot(imx490,'dv hline',[1,150],'two lines',true)
+
 
 %% Turn off the noise and recompute
 
