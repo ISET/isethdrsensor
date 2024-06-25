@@ -24,7 +24,7 @@ lgt = {'headlights','streetlights','otherlights','skymap'};
 % The metadata and the rendered images
 user = 'wandell';
 host = 'orange.stanford.edu';
-imageID = '1113165019';
+imageID = '1113082734';
 
 % Prepare the local directory
 destPath = fullfile(isethdrsensorRootPath,'data',imageID);

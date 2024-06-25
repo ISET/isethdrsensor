@@ -42,8 +42,8 @@ for ii=1:numel(lst)
     scenes = cell(numel(lgt,1));
     for ll = 1:numel(lgt)
         thisFile = sprintf('%s_%s.exr',imageID,lgt{ll});
-        destFile = fullfile(destPath,thisFile);
-        scenes{ll} = piEXR2ISET(destFile);
+        if ~exist(thisFile,'file'), error('Input file missing'); end                
+        scenes{ll} = piEXR2ISET(thisFile);
 
         % No cropping?
         scenes{ll} = sceneCrop(scenes{ll},rect);
