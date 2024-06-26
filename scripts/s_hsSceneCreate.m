@@ -1,7 +1,15 @@
 % s_hsSceneCreate
+%
+% This will turn into a function, something like
+%
+% function scene = hsSceneCreate(imageID,lstDir,dynamicRange,lowLight);
+%
 
-imageID = '1114034742';
-lstDir = '/Volumes/TOSHIBA EXT/isetdata/lightgroups';
+lst = hsSceneDescriptions('print',false);
+
+imageID = lst(7).id;
+% lstDir = '/Volumes/TOSHIBA EXT/isetdata/lightgroups';
+lstDir = '/Volumes/Wandell/Data/lightgroups';
 
 fname = fullfile(lstDir,sprintf('HDR-scenes-%s',imageID));
 load(fname,'scenes','sceneMeta');

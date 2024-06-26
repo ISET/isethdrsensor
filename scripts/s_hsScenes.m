@@ -15,8 +15,10 @@
 %% See what is downloaded
 
 % BW Uses:
-lstDir = '/Volumes/TOSHIBA EXT/isetdata/lightgroups';
-% Others will use other directories
+% lstDir = '/Volumes/TOSHIBA EXT/isetdata/lightgroups';
+lstDir = '/Volumes/Wandell/Data/lightgroups';
+
+%% Others will use other directories
 
 lgt = {'headlights','streetlights','otherlights','skymap'};
 lst = dir(fullfile(lstDir,'11*'));
