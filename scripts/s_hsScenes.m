@@ -6,20 +6,7 @@
 % Then convert them to the four scenes and the metadata using this
 % script. The scenes are also stored in isethdrsensor/data
 %
-% To create a specific scene use
-%
-%  fname = fullfile(isethdrsensorRootPath,'data',sprintf('HDR-scenes-%s',imageID));
-%  load(fname,'scenes','sceneMeta);
-%
-%  dynamicRange = 10^4;
-%  lowLight = 10;
-%  scene = lightGroupDynamicRangeSet(scenes, dynamicRange, lowLight);
-%  scene = sceneSet(scene,'fov',20);   % I cropped the big scene down.
-%  scene = sceneSet(scene,'depth map',sceneMeta.depthMap);
-%  rmfield(sceneMeta,'depthMap');
-%  metadata = sceneMeta;
-%  scene = sceneSet(scene,'metadata',metadata);
-%  sceneWindow(scene);
+% To create a specific scene use s_hsSceneCreate
 %
 % See also
 %   s_autoLightGroups, s_downloadLightGroup, s_hsensorRGB
@@ -27,15 +14,18 @@
 
 %% See what is downloaded
 
+% BW Uses:
+lstDir = '/Volumes/TOSHIBA EXT/isetdata/lightgroups';
+% Others will use other directories
+
 lgt = {'headlights','streetlights','otherlights','skymap'};
-lstDir = fullfile(isethdrsensorRootPath,'data');
 lst = dir(fullfile(lstDir,'11*'));
 
 %%
 for ii=1:numel(lst)
 
     imageID = lst(ii).name;
-    fname = fullfile(isethdrsensorRootPath,'data',sprintf('HDR-scenes-%s.mat',imageID));
+    fname = fullfile(lstDir,sprintf('HDR-scenes-%s.mat',imageID));
 
     if ~exist(fname,'file')
         fprintf('Creating %s ...',fname);
