@@ -7,15 +7,17 @@
 
 lst = hsSceneDescriptions('print',false);
 
-imageID = lst(7).id;
+%%
+imageID = lst(3).id;
 % lstDir = '/Volumes/TOSHIBA EXT/isetdata/lightgroups';
 lstDir = '/Volumes/Wandell/Data/lightgroups';
 
 fname = fullfile(lstDir,sprintf('HDR-scenes-%s',imageID));
 load(fname,'scenes','sceneMeta');
 
-dynamicRange = 10^5;
-lowLight = 10;
+%%
+dynamicRange = 10^7;
+lowLight = 1;
 scene = lightGroupDynamicRangeSet(scenes, dynamicRange, lowLight);
 
 % Crop here ..
@@ -23,10 +25,12 @@ scene = lightGroupDynamicRangeSet(scenes, dynamicRange, lowLight);
 % Denoise here
 scene = piAIdenoise(scene);
 
-scene = sceneSet(scene,'fov',40);   % I cropped the big scene down.
+scene = sceneSet(scene,'fov',40);   % Adjust if you crop
 scene = sceneSet(scene,'depth map',sceneMeta.depthMap);
 metadata = rmfield(sceneMeta,'depthMap');
 scene = sceneSet(scene,'metadata',metadata);
+
+% ieReplaceObject(scene); sceneWindow;
 sceneWindow(scene);
 
 %%
