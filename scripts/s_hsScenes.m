@@ -34,9 +34,12 @@ lst = dir(fullfile(lstDir,'11*'));
 %%
 for ii=1:numel(lst)
 
-    fname = fullfile(isethdrsensorRootPath,'data',sprintf('HDR-scenes-%s',imageID));
+    imageID = lst(ii).name;
+    fname = fullfile(isethdrsensorRootPath,'data',sprintf('HDR-scenes-%s.mat',imageID));
 
     if ~exist(fname,'file')
+        fprintf('Creating %s ...',fname);
+
         imageID = lst(ii).name;
         load(fullfile(lstDir,imageID,[imageID,'.mat']),'sceneMeta');
 
@@ -53,7 +56,7 @@ for ii=1:numel(lst)
 
         %% Save
         save(fname,'scenes','sceneMeta','lgt');
-        fprintf('Saved file: %s \n',fname)
+        fprintf('done.\n')
     else
         fprintf('%s exists\n',fname);
     end
