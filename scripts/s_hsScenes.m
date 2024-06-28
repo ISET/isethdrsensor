@@ -15,7 +15,8 @@
 %% See what is downloaded
 
 % BW Uses:
-lstDir = '/Volumes/TOSHIBA EXT/isetdata/lightgroups';
+% lstDir = '/Volumes/TOSHIBA EXT/isetdata/lightgroups';
+lstDir = fullfile(isethdrsensorRootPath,'data');
 % Others will use other directories
 
 lgt = {'headlights','streetlights','otherlights','skymap'};
@@ -26,11 +27,12 @@ for ii=1:numel(lst)
 
     imageID = lst(ii).name;
     fname = fullfile(lstDir,sprintf('HDR-scenes-%s.mat',imageID));
+    rect = [270 270 512 512];
 
     if ~exist(fname,'file')
         fprintf('Creating %s ...',fname);
 
-        imageID = lst(ii).name;
+        % imageID = lst(ii).name;
         load(fullfile(lstDir,imageID,[imageID,'.mat']),'sceneMeta');
 
         % We store the names of the groups, too.
@@ -42,6 +44,7 @@ for ii=1:numel(lst)
             thisFile = sprintf('%s_%s.exr',imageID,lgt{ll});
             if ~exist(thisFile,'file'), error('Input file missing'); end
             scenes{ll} = piEXR2ISET(thisFile);
+            scenes{ll} = sceneCrop(scenes{ll},rect);
         end
 
         %% Save
