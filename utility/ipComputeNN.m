@@ -1,4 +1,4 @@
-function ip = ipComputeNN(sensor, type)
+function ip = ipComputeNN(inputSensor, type)
 % ipComputeNN Computes the image processing pipeline using a neural network for demosaicing.
 %
 % Syntax:
@@ -37,10 +37,10 @@ if ~exist(exrDir, 'dir')
 end
 
 % Generate the filename for the EXR file
-fname = sprintf('%02dH%02dS-%s-%.2f.exr', uint8(HH), uint8(mm), type, sensorGet(sensor, 'exp time', 'ms'));
+fname = sprintf('%02dH%02dS-%s-%.2f.exr', uint8(HH), uint8(mm), type, sensorGet(inputSensor, 'exp time', 'ms'));
 
 % Save the sensor data as an EXR file
-fname = sensor2EXR(sensor, fullfile(exrDir, fname));
+fname = sensor2EXR(inputSensor, fullfile(exrDir, fname));
 
 % Split the file path into parts
 [p, n, ext] = fileparts(fname);
@@ -56,8 +56,8 @@ isetDemosaicNN(type, fname, ipEXR);
 ip = ipCreate;
 
 % Create the rendering transforms
-wave = sensorGet(sensor, 'wave');
-sensorQE = sensorGet(sensor, 'spectral qe');
+wave = sensorGet(inputSensor, 'wave');
+sensorQE = sensorGet(inputSensor, 'spectral qe');
 targetQE = ieReadSpectra('xyzQuanta', wave);
 T{1} = imageSensorTransform(sensorQE(:,1:3), targetQE, 'D65', wave, 'mcc');
 T{2} = eye(3,3);
@@ -77,7 +77,7 @@ img = exrread(ipEXR);
 ip = ipSet(ip, 'sensor space', img);
 
 % Compute the final image processing
-ip = ipCompute(ip, sensor);
+ip = ipCompute(ip, inputSensor);
 
 % Set the name of the image processing structure to the filename
 [~, ipName] = fileparts(ipEXR);
