@@ -36,7 +36,6 @@ lst = hsSceneDescriptions;
 %%
 for ss = 1:numel(lst)
     imageID = lst(ss).id;
-
     % The isethdrsensor data directory location
 
     destPath = fullfile(isethdrsensorRootPath,'data',imageID);

@@ -52,7 +52,6 @@ function [combinedScene, wgts] = lightGroupDynamicRangeSet(scenes, DR, lowlightl
 
 if notDefined('scenes'),        error('Scenes required.');        end
 if notDefined('DR'),            error('Dynamic range required.'); end
-if notDefined('lowlightlevel'), lowlightlevel = 10;               end  % NITS
 
 %% Headlights
 
@@ -67,6 +66,7 @@ if notDefined('lowlightlevel'), lowlightlevel = 10;               end  % NITS
 % Set the maximum luminance for headlights - 1e4 x a random number
 % between 2 and 20.
 peakLumForHeadlight = max(rand(1) * 20, 2) * 1e4;
+% peakLumForHeadlight = 20 * 1e4;
 
 % Get the current luminance of the headlights scene
 currentL = sceneGet(scenes{1}, 'max luminance');
@@ -112,11 +112,11 @@ wgts(3) = peakLumForOtherlight / currentL;
 
 % Skylight luminance depends on the dynamic range, using mean luminance
 % Dynamic range is specified in linear units, e.g., 10^4, not dB
-meanLumForSkylight = peakLumForHeadlight / DR;
+meanLumForSkylight = 200000 / DR;
 
 % Get the current luminance of the skymap scene
 % currentL = sceneGet(scenes{4}, 'mean luminance');
-val = sceneGet(scenes{4}, 'percentile luminance',0.1);
+val = sceneGet(scenes{4}, 'percentile luminance',30);
 currentL = val.lum;
 
 % Calculate the weight for skylight
@@ -126,7 +126,9 @@ wgts(4) = meanLumForSkylight / currentL;
 % Combine the scenes with the calculated weights
 combinedScene = sceneAdd(scenes, wgts);
 
-combinedScene = sceneAdjustLuminance(combinedScene,'median',lowlightlevel);
+if exist('lowlightlevel','var')
+    combinedScene = sceneAdjustLuminance(combinedScene,'median',lowlightlevel);
+end  % NITS
 
 % Store the weights in the metadata of the combined scene
 combinedScene.metadata.wgts = wgts;
