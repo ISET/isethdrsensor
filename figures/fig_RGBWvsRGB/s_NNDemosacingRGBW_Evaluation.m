@@ -1,4 +1,5 @@
 %% Setup
+ieInit;
 sensorRGBW = sensorCreate('ar0132at',[],'rgbw');
 sensorRGB = sensorCreate('ar0132at',[],'rgb');
 sensorRGB = sensorSet(sensorRGB,'exp time',1/30);
@@ -151,3 +152,64 @@ title('MTF for RGBWNN');
 xlabel('Spatial frequency cy/mm');
 ylabel('Contrast reduction (SFR)');
 ylim([0,1]);
+
+%% Driving scene
+imageID = '1114090605';
+
+lgt = {'headlights','streetlights','otherlights','skymap'};
+destPath = fullfile(isethdrsensorRootPath,'data',imageID);
+
+scenes = cell(numel(lgt,1));
+for ll = 1:numel(lgt)
+    thisFile = sprintf('%s_%s.exr',imageID,lgt{ll});
+    destFile = fullfile(destPath,thisFile);
+    scenes{ll} = piEXR2ISET(destFile);
+end
+disp('Done loading.')
+
+
+wgts_day = [0.5019    0.0063    0.0083    0.01];
+scene = sceneAdd(scenes, wgts_day);
+thisScene = piAIdenoise(scene);
+
+[oi,wvf] = oiCreate('wvf');
+% wvf = wvfSet(wvf, 'spatial samples',512);
+[aperture, params] = wvfAperture(wvf,'nsides',5,...
+    'dot mean',50, 'dot sd',20, 'dot opacity',0.5,'dot radius',5,...
+    'line mean',50, 'line sd', 20, 'line opacity',0.5,'linewidth',2);
+
+% oi = oiSet(oi,'wvf zcoeffs',0,'defocus');
+oi = oiCompute(oi, thisScene,'aperture',aperture,'crop',true,'pixel size',3e-6);
+
+eTime = 1/60;
+
+sensorRGBW = sensorCreate('ar0132at',[],'rgbw');
+sensorRGB = sensorCreate('ar0132at',[],'rgb');
+
+sensorRGBW = sensorSet(sensorRGBW,'exp time',eTime);
+sensorRGBW = sensorSet(sensorRGBW,'match oi',oi);
+
+sensorRGBW = sensorSet(sensorRGBW,'analog gain', 1/10);
+sensorRGBW = sensorCompute(sensorRGBW,oi);
+
+sensorWindow(sensorRGBW);
+
+sensorRGB = sensorSet(sensorRGB,'exp time',eTime);
+sensorRGB = sensorSet(sensorRGB,'match oi',oi);
+
+sensorRGB = sensorSet(sensorRGB,'analog gain', 1/10);
+sensorRGB = sensorCompute(sensorRGB,oi);
+
+sensorWindow(sensorRGB);
+%%
+ip = ipCreate;
+ipRGB = ipCompute(ip, sensorRGB);
+ipWindow(ipRGB);
+srgb = ipGet(ipRGB,'srgb');imwrite(srgb, '~/Desktop/rgb.jpg');
+
+
+ipRGBW = ipComputeNN(sensorRGBW, 'rgbw');
+ipNNFile = '/Users/zhenyi/git_repo/dev/isethdrsensor/local/exr/01-Jul-2024/ISETSensor/ISET_Sensor/17H05S-rgbw-16.67.exr';
+ipRGBW = ipComputeNN(sensorRGBW, 'rgbw',ipNNFile);
+ipWindow(ipRGBW);
+srgb = ipGet(ipRGBW,'srgb');imwrite(srgb, '~/Desktop/rgbw.jpg');
