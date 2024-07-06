@@ -1,4 +1,4 @@
-function ip = ipComputeNN(inputSensor, type)
+function ip = ipComputeNN(inputSensor, type, ipEXR)
 % ipComputeNN Computes the image processing pipeline using a neural network for demosaicing.
 %
 % Syntax:
@@ -24,36 +24,37 @@ function ip = ipComputeNN(inputSensor, type)
 
 % Start timing the function execution
 tic;
-
-% Get the current hour and minute
-[HH, mm] = hms(datetime('now'));
-
-% Define the directory for storing EXR files
-exrDir = fullfile(isethdrsensorRootPath, 'local', 'exr', string(datetime('today')));
-
-% Create the directory if it does not exist
-if ~exist(exrDir, 'dir')
-    mkdir(exrDir); 
-end
-
-% Generate the filename for the EXR file
-fname = sprintf('%02dH%02dS-%s-%.2f.exr', uint8(HH), uint8(mm), type, sensorGet(inputSensor, 'exp time', 'ms'));
-
-% Save the sensor data as an EXR file
-fname = sensor2EXR(inputSensor, fullfile(exrDir, fname));
-
-% Split the file path into parts
-[p, n, ext] = fileparts(fname);
-
-% Define the output EXR filename for the demosaiced image
-ipEXR = sprintf('%s-ip%s', fullfile(p, n), ext);
-
-disp('INFO: Demosaicing started ...')
-% Perform neural network-based demosaicing
-isetDemosaicNN(type, fname, ipEXR);
-
 % Create an image processing structure
 ip = ipCreate;
+if notDefined('ipEXR')
+    
+    % Get the current hour and minute
+    [HH, mm] = hms(datetime('now'));
+
+    % Define the directory for storing EXR files
+    exrDir = fullfile(isethdrsensorRootPath, 'local', 'exr', string(datetime('today')));
+
+    % Create the directory if it does not exist
+    if ~exist(exrDir, 'dir')
+        mkdir(exrDir);
+    end
+
+    % Generate the filename for the EXR file
+    fname = sprintf('%02dH%02dS-%s-%.2f.exr', uint8(HH), uint8(mm), type, sensorGet(inputSensor, 'exp time', 'ms'));
+
+    % Save the sensor data as an EXR file
+    fname = sensor2EXR(inputSensor, fullfile(exrDir, fname));
+
+    % Split the file path into parts
+    [p, n, ext] = fileparts(fname);
+    ipEXR = sprintf('%s-ip%s', fullfile(p, n), ext);
+    % Define the output EXR filename for the demosaiced image
+    return;
+    disp('INFO: Demosaicing started ...')
+    % Perform neural network-based demosaicing
+    isetDemosaicNN(type, fname, ipEXR);
+end
+
 
 % Create the rendering transforms
 wave = sensorGet(inputSensor, 'wave');
