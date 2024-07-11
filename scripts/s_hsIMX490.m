@@ -1,5 +1,9 @@
 %% s_hsIMX490
 % 
+% Not up to date.  But useful to start the split pixel simulation for
+% the paper.
+%
+%
 
 %%
 ieInit;
@@ -9,7 +13,8 @@ ieInit;
 % Use the script s_downloadLightGroup to add more light group scenes
 % to this list.  It is OK to make reasonably large versions, IMHO.
 
-imageID = '1114011756';
+imageID = '1112201236';
+% 1112201236
 % 1114091636 - Red/Green cars - Should expand image
 % 1114011756 - Vans moving away, person crossing with purse
 % 1113094429 - Cyclist in front of truck, red sky.  Works well.
@@ -18,7 +23,7 @@ imageID = '1114011756';
 lgt = {'headlights','streetlights','otherlights','skymap'};
 
 % Cropped and denoised light group scenes
-fname = fullfile(isethdrsensorRootPath,'local',sprintf('HDR-scenes-%s',imageID));
+fname = fullfile(isethdrsensorRootPath,'data',sprintf('HDR-scenes-%s',imageID));
 load(fname,'scenes');
 
 %% Set the dynamic range and the level of the dark region (cd/m2 = nits)

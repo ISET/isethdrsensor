@@ -51,8 +51,8 @@ if count(py.sys.path, python_path) == 0
 end
 
 % Import the Python module for demosaicing
-NNemosaic = py.importlib.import_module('Demosaic_restormer');
-
+NNDemosaic = py.importlib.import_module('Demosaic_restormer');
+NNDemosaic = py.importlib.reload(NNDemosaic);
 % Determine the path to the appropriate model based on CFA (Color Filter Array)
 switch cfa
     case 'rgb'
@@ -67,7 +67,7 @@ switch cfa
 end
 
 % Call the Python function for demosaicing
-result = NNemosaic.demosaic(model_path, exrInput, exrOutput);
+result = NNDemosaic.demosaic(model_path, exrInput, exrOutput);
 
 % Check if the result is not of Python NoneType, indicating an error
 if ~isa(result, 'py.NoneType')

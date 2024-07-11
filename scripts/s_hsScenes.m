@@ -14,8 +14,9 @@
 
 %% See what is downloaded
 
-% BW Uses:
+% BW also uses the data on the TOSHIBA drive:
 % lstDir = '/Volumes/TOSHIBA EXT/isetdata/lightgroups';
+% There should be data available through mount of orange.
 lstDir = fullfile(isethdrsensorRootPath,'data');
 % Others will use other directories
 
@@ -44,7 +45,9 @@ for ii=1:numel(lst)
             thisFile = sprintf('%s_%s.exr',imageID,lgt{ll});
             if ~exist(thisFile,'file'), error('Input file missing'); end
             scenes{ll} = piEXR2ISET(thisFile);
-            scenes{ll} = sceneCrop(scenes{ll},rect);
+            if ~isempty(rect)
+                scenes{ll} = sceneCrop(scenes{ll},rect);
+            end
         end
 
         %% Save
