@@ -8,12 +8,12 @@ function scene = hsSceneCreate(imageID,varargin)
 %   imageID
 %  
 % Optional key/val pairs
-%   data dir - 'isethdrsensorRootPath/data'
-%   dynamic range 10^4
-%   low light - 10 cd/m2
-%   denoise - true
-%   rect - [] (no crop)
-%   fov -  40 deg default
+%   data dir -  Directory with the HDR-scenes-* files.  default: 'isethdrsensorRootPath/data'
+%   dynamic range:   Scene dynamic range:          Default: 10^4
+%   low light -      Dimmest region of the image:  Default: 10 cd/m2
+%   denoise -        Denoise after combining:      Default: true
+%   rect -           Crop the scene [r,c,height,width] Default: [] (no crop)
+%   fov -            Scene horizontal field of view:   Default: 40 deg
 %
 % Return
 %    scene
@@ -25,8 +25,8 @@ function scene = hsSceneCreate(imageID,varargin)
 % Example:
 %{
 imageID = '1112201236'; % - Good one
-scene = hsSceneCreate(imageID,'dynamic range',10^5,'low light',10);
-sceneWindow(scene);
+scene = hsSceneCreate(imageID,'dynamic range',10^5,'low light',10,'denoise',false);
+sceneWindow(scene); scene = sceneSet(scene,'gamma',0.3);
 %}
 
 %% Inputs
