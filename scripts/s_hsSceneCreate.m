@@ -55,8 +55,7 @@ oi = oiCompute(oi, scene,'aperture',aperture,'crop',true, 'pixel size',3e-6);
 % 1112201236
 oiWindow(oi);
 oi = oiSet(oi,'gamma',0.3);
-[udata, hdl ] = oiPlot(oi,'hline illuminance',[1,564]);
-set(gca,'yscale','log');
+[udata, hdl ] = oiPlot(oi,'hline illuminance',[1,564],'no figure');
 rgb = oiGet(oi,'rgb');
 [r,c,w] = size(rgb);
 ieNewGraphWin; imagesc(rgb); axis image;
