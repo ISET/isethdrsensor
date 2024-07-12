@@ -67,5 +67,7 @@ yyaxis right;
 plot(1:numel(udata.data),udata.data,'w-');
 ax = gca; ax.YAxis(2).Scale = 'log'; ax.YAxis(2).Limits = [10^-2,10^11];
 ylabel('Log10 Illuminance');
-% Position:   0.0070    0.3986    0.4825    0.5114
+set(gcf,'Position',[0.0070    0.3986    0.4825    0.5114]);
+yTick = get(gca,'ytick');
+set(gca,'ytick',yTick(1:4))
 %}

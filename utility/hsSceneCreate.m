@@ -49,7 +49,7 @@ fname = fullfile(p.Results.datadir,sprintf('HDR-scenes-%s.mat',imageID));
 if exist(fname,'file')
     load(fname,'scenes','sceneMeta');
 else
-    error('%s not found\n');
+    error('Light group ID %s not found.\n',imageID);
 end
 
 %%  Combine them
