@@ -1,7 +1,15 @@
 %% Script to download a light group
 %
+% The light group data are stored on orange as EXR files in two
+% places.  One is the metadata:
+%
+%  metaFolder = '/acorn/data/iset/isetauto/Ford/SceneMetadata';
+%
+% The files in the metaFolder specify where the light group EXR files
+% are stored on orange.
+%
 % If the directory for the lightgroup already exists in your
-% isethdrsensor/data directory, the download will be skipped.
+% isethdrsensor/data directory, the download is skipped.
 %
 % The light group will be downloaded into your local directory
 %
@@ -36,7 +44,6 @@ lst = hsSceneDescriptions;
 %%
 for ss = 1:numel(lst)
     imageID = lst(ss).id;
-
     % The isethdrsensor data directory location
 
     destPath = fullfile(isethdrsensorRootPath,'data',imageID);

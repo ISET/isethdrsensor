@@ -10,7 +10,7 @@ function lst = hsSceneDescriptions(varargin)
 %   database.
 %
 % See also
-%   s_downloadLightGroup, hsScenes
+%   s_downloadLightGroup, s_hsSceneCreate, s_hsScenes
 %
 
 % Example:
