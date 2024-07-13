@@ -1,8 +1,13 @@
-% s_hsSceneCreate
+% s_hsSkyBrightness
 %
-% Creating scenes and oi to run through the split pixel section of the
-% paper. These are scenes with different amounts of sky light, but
-% otherwise the same.
+% Creating scenes and oi with a range of skymap brightness. This
+% script creates a bunch of images to see which ones we will run
+% through the split pixel section of the paper. 
+% 
+% These are scenes with different amounts of sky light, but otherwise
+% the same.
+%
+% Axes are set by a function at the end.
 %
 % See also
 %   
@@ -13,7 +18,6 @@
 
 %%
 ieInit;
-
 cnt = 1;
 
 %% Create the optics
@@ -104,8 +108,9 @@ oiPlot(oi,'illuminance hline rgb',[1 564]);
 setAxisAndWrite(cnt);
 cnt = cnt + 1;
 
-%%
+%% End
 
+%-----------------------------------------
 function setAxisAndWrite(cnt)
 ax = gca; yyaxis right
 ax.YAxis(2).Limits = [10^-4,10^4];
