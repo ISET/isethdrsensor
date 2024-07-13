@@ -37,23 +37,6 @@ imageID = '1112201236'; % - Good one
 oi = oiCompute(oi, scene,'aperture',aperture,'crop',true, 'pixel size',3e-6);
 oiWindow(oi);
 oi = oiSet(oi,'gamma',0.3);
-<<<<<<< Updated upstream
-[udata, hdl ] = oiPlot(oi,'hline illuminance',[1,564],'no figure');
-rgb = oiGet(oi,'rgb');
-[r,c,w] = size(rgb);
-ieNewGraphWin; imagesc(rgb); axis image;
-hold on;
-thisL = line([1 1925],[564 564],'Color','g','LineStyle','--');
-thisL.LineWidth = 0.1;
-yyaxis right;
-plot(1:numel(udata.data),udata.data,'w-');
-ax = gca; ax.YAxis(2).Scale = 'log'; ax.YAxis(2).Limits = [10^-2,10^11];
-ylabel('Log10 Illuminance');
-set(gcf,'Position',[0.0070    0.3986    0.4825    0.5114]);
-yTick = get(gca,'ytick');
-set(gca,'ytick',yTick(1:4))
-%}
-=======
 oiPlot(oi,'illuminance hline rgb',[1 564]);
 
 %% This one is more night weighted (lower skymap, other stuff unchanged)
@@ -83,4 +66,3 @@ oi = oiSet(oi,'gamma',0.2);
 oiPlot(oi,'illuminance hline rgb',[1 564]);
 
 %%
->>>>>>> Stashed changes
