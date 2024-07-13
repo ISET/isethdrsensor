@@ -24,7 +24,9 @@ function [combinedScene, wgts] = lightGroupDynamicRangeSet(scenes, DR, lowlightl
 %                   bright lights are a small fraction of the image.
 %
 % Outputs:
-%   wgts          - Weights for combining the light groups.
+%   wgts          - Weights for combining the light groups. These are,
+%                   in order, healights, street lights, other lights,
+%                   skylight.
 %   combinedScene - The final scene.  You can get its true dynamic
 %                   range and median using
 %                      sceneGet(scene,'dynamic range log10')

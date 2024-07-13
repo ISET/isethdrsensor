@@ -1,14 +1,17 @@
-function scene = hsSceneCreate(imageID,varargin)
+function [scene, wgts] = hsSceneCreate(imageID,varargin)
 % Create a scene from an HDR light group 
 %
 % Synopsis
-%   scene = hsSceneCreate(imageID,varargin);
+%   [scene, wgts] = hsSceneCreate(imageID,varargin);
 %
 % Input
 %   imageID
 %  
 % Optional key/val pairs
 %   data dir -  Directory with the HDR-scenes-* files.  default: 'isethdrsensorRootPath/data'
+%   weights  -       Four light group weights,  Over-rides dynamic range
+%                    and lowlight. Weight ordering:
+%                    Headlight, Street light, Other, Sky light.
 %   dynamic range:   Scene dynamic range:          Default: 10^4
 %   low light -      Dimmest region of the image:  Default: 10 cd/m2
 %   denoise -        Denoise after combining:      Default: true
@@ -26,7 +29,8 @@ function scene = hsSceneCreate(imageID,varargin)
 %{
 imageID = '1112201236'; % - Good one
 scene = hsSceneCreate(imageID,'dynamic range',10^5,'low light',10,'denoise',false);
-sceneWindow(scene); scene = sceneSet(scene,'gamma',0.3);
+sceneWindow(scene); 
+scene = sceneSet(scene,'gamma',0.3);
 %}
 
 %% Inputs
@@ -40,6 +44,7 @@ p.addParameter('datadir',fullfile(isethdrsensorRootPath,'data'),@(x)(exist(x,'di
 p.addParameter('rect',[],@isvector);
 p.addParameter('denoise',true,@islogical);
 p.addParameter('fov',40,@isscalar);
+p.addParameter('weights',[],@isvector);
 
 p.parse(imageID,varargin{:});
 
@@ -53,7 +58,22 @@ else
 end
 
 %%  Combine them
-scene = lightGroupDynamicRangeSet(scenes, p.Results.dynamicrange, p.Results.lowlight);
+if isempty(p.Results.weights)
+    % No weights, so use these parameters
+    [scene, wgts] = lightGroupDynamicRangeSet(scenes, p.Results.dynamicrange, p.Results.lowlight);
+else
+    % The user sent in weights.  Use them.
+    wgts = p.Results.weights;    
+    scene = sceneAdd(scenes, wgts);
+
+    if exist('lowlightlevel','var')
+        scene = sceneAdjustLuminance(scene,'median',lowlightlevel);
+    end  % NITS, which is also cd/m2
+
+    % Store the weights in the metadata of the combined scene
+    scene.metadata.wgts = wgts;
+end
+
 
 %% Edit the scene by cropping and denoising
 
