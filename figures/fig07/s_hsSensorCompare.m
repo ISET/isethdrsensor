@@ -118,7 +118,49 @@ ip = ipCompute(ip,sensorSplit);
 ipWindow(ip);
 
 ip = ipCompute(ip,sensorRGB);
+ipWindow(ip,'render flag','rgb','gamma',0.3);
+
+%% Now the RGBW, which will become a function
+
+% Not working yet.  I think the network is trained on the ar0132at
+% 'rgbw' sensor, so that part is OK.  But maybe I need to update the
+% network on my local machine?  Asking Zhenyi.
+%
+% The ipCompute command should become something like
+%
+%   ipCompute(ip,sensorRGBW,'neural network','ar0132at-rgbw');
+%
+% Then we switch to the calculation below inside of ipCompute() 
+%
+
+exrDir = fullfile(isethdrsensorRootPath,'local');
+baseName = fullfile(exrDir,'rgbw');
+fname  = sensor2EXR(sensorRGBW,[baseName,'.exr']);
+ipName = sprintf('%s-ip.exr',baseName);
+isetDemosaicNN('rgbw', fname, ipName);
+
+% Create the rendering transforms
+wave     = sensorGet(sensorRGBW,'wave');
+sensorQE = sensorGet(sensorRGBW,'spectral qe');
+targetQE = ieReadSpectra('xyzQuanta',wave);
+T{1} = imageSensorTransform(sensorQE(:,1:3),targetQE,'D65',wave,'mcc');
+T{2} = eye(3,3);
+T{3} = ieInternal2Display(ip);
+
+ip = ipSet(ip,'demosaic method','skip');
+ip = ipSet(ip,'transforms',T);
+ip = ipSet(ip,'transform method','current');
+
+img = exrread(ipName);
+% ieNewGraphWin; imagesc(abs(img.^0.2));
+
+ip = ipSet(ip,'sensor space',img);
+ip = ipCompute(ip,sensorRGBW);
+
+[~,ipName] = fileparts(ipName);
+ip = ipSet(ip','name',ipName);
 ipWindow(ip);
+
 
 %%
 %{
