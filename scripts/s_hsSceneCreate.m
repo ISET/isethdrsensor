@@ -1,7 +1,7 @@
 % s_hsSceneCreate
 %
-% Creating scenes and oi to run through the split pixel section of the
-% paper. These are scenes with different amounts of sky light, but
+% Creating scenes and oi that will be run through the split pixel section
+% of the paper. These are scenes with different amounts of sky light, but
 % otherwise the same.
 %
 % See also

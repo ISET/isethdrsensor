@@ -1,24 +1,27 @@
 % s_hsSkyBrightness
 %
-% Creating scenes and oi with a range of skymap brightness. This
-% script creates a bunch of images to see which ones we will run
-% through the split pixel section of the paper. 
+% Creating scenes and oi sweeping out the skymap brightness. This takes us
+% from day to night levels.  It is used to create a GIF for presentations,
+% showing how the reduction in the sky brightness changes the overall
+% sensor illuminance.
 % 
-% These are scenes with different amounts of sky light, but otherwise
-% the same.
+% The scenes have with different amounts of sky light, but otherwise the
+% same.
 %
-% Axes are set by a function at the end.
+% The irradiance axis levels (on the right) are set by a function at the
+% end.
 %
 % See also
-%   
+%   s_hsSceneCreate
 
 %%  These are all the scenes BW processed.
-% We need a different version of this, probably threw Andrew's database.
+
+% We need a different version of this, probably through Andrew's database.
+
 % lst = hsSceneDescriptions('print',false);
 
 %%
 ieInit;
-cnt = 1;
 
 %% Create the optics
 [oi,wvf] = oiCreate('wvf');
@@ -28,13 +31,13 @@ params = wvfApertureP;
 % {
 params.nsides = 3;
 params.dotmean = 50;
-params.dotSd = 20;
-params.dotOpacity =0.5;
-params.dotRadius = 5;
-params.lineMean = 50;
-params.lineSD = 20;
-params.lineOpacity = 0.5;
-params.lineWidth = 2;
+params.dotsd = 20;
+params.dotopacity =0.5;
+params.dotradius = 5;
+params.linemean = 50;
+params.linesd = 20;
+params.lineopacity = 0.5;
+params.linewidth = 2;
 %}
 
 aperture = wvfAperture(wvf,params);
@@ -43,73 +46,32 @@ oi = oiSet(oi,'wvf zcoeffs',0,'defocus');
 imageID = '1112201236'; % - Good one
 
 %% First scene
-[scene,wgts] = hsSceneCreate(imageID,'dynamic range',10^5,'low light',10,'denoise',true);
-% sceneWindow(scene); scene = sceneSet(scene,'gamma',0.3);
+% headlights, street lights, other lights, sky map
+% wgts = [0.0124    0.0011    0.0010    2.396];
+wgts = [0.0124    5*0.0011    3*0.0010    100*2.396];
+sf = 0.25;
+cnt = 1;
+for ii=1:7
+    fprintf('Scene %d, wgts(4) %f\n',ii, wgts(4));
 
-oi = oiCompute(oi, scene,'aperture',aperture,'crop',true, 'pixel size',3e-6);
-oiWindow(oi);
-oi = oiSet(oi,'gamma',0.3);
-oiPlot(oi,'illuminance hline rgb',[1 564]);
+    scene = hsSceneCreate(imageID,'weights',wgts,'denoise',true);
 
-setAxisAndWrite(cnt);
-cnt = cnt + 1;
-%% This one is more night weighted (lower skymap, other stuff unchanged)
+    % [scene,wgts] = hsSceneCreate(imageID,'dynamic range',10^5,'low light',10,'denoise',true);
+    oi = oiCompute(oi, scene,'aperture',aperture,'crop',true, 'pixel size',3e-6);
+    
+    oiWindow(oi);
+    if ii < 4, oi = oiSet(oi,'gamma',0.7);
+    else,      oi = oiSet(oi,'gamma',0.3);
+    end
 
-wgts(4) = wgts(4)/20;
-[scene,wgts] = hsSceneCreate(imageID,'weights',wgts,'denoise',true);
-oi = oiCompute(oi, scene,'aperture',aperture,'crop',true, 'pixel size',3e-6);
-oiWindow(oi);
-oi = oiSet(oi,'gamma',0.2);
-oiPlot(oi,'illuminance hline rgb',[1 564]);
-setAxisAndWrite(cnt);
-cnt = cnt + 1;
+    oiPlot(oi,'illuminance hline rgb',[1 564]);
 
-%% Down another factor of 20
-
-wgts(4) = wgts(4)/20;
-[scene,wgts] = hsSceneCreate(imageID,'weights',wgts,'denoise',true);
-% sceneWindow(scene); scene = sceneSet(scene,'gamma',0.3);
-oi = oiCompute(oi, scene,'aperture',aperture,'crop',true, 'pixel size',3e-6);
-oiWindow(oi);
-oi = oiSet(oi,'gamma',0.2);
-oiPlot(oi,'illuminance hline rgb',[1 564]);
-
-setAxisAndWrite(cnt);
-cnt = cnt + 1;
-
-%% Brighten the sky
-
-wgts(4) = wgts(4)*20*20*10;
-[scene,wgts] = hsSceneCreate(imageID,'weights',wgts,'denoise',true);
-oi = oiCompute(oi, scene,'aperture',aperture,'crop',true, 'pixel size',3e-6);
-oiWindow(oi);
-oi = oiSet(oi,'gamma',0.5);
-oiPlot(oi,'illuminance hline rgb',[1 564]);
-setAxisAndWrite(cnt);
-cnt = cnt + 1;
+    setAxisAndWrite(cnt);
+    cnt = cnt + 1;
+    wgts(4) = wgts(4)*sf;
+end
 
 %%
-wgts(4) = wgts(4)*10;
-[scene,wgts] = hsSceneCreate(imageID,'weights',wgts,'denoise',true);
-oi = oiCompute(oi, scene,'aperture',aperture,'crop',true, 'pixel size',3e-6);
-oiWindow(oi);
-oi = oiSet(oi,'gamma',0.5);
-oiPlot(oi,'illuminance hline rgb',[1 564]);
-setAxisAndWrite(cnt);
-cnt = cnt + 1;
-
-%%
-wgts(4) = wgts(4)*3;
-[scene,wgts] = hsSceneCreate(imageID,'weights',wgts,'denoise',true);
-oi = oiCompute(oi, scene,'aperture',aperture,'crop',true, 'pixel size',3e-6);
-oiWindow(oi);
-oi = oiSet(oi,'gamma',0.5);
-oiPlot(oi,'illuminance hline rgb',[1 564]);
-setAxisAndWrite(cnt);
-cnt = cnt + 1;
-
-%% End
-
 %-----------------------------------------
 function setAxisAndWrite(cnt)
 ax = gca; yyaxis right
@@ -122,3 +84,5 @@ fname = sprintf('test-%d.png',cnt);
 fname = fullfile(isethdrsensorRootPath,'local',fname);
 exportgraphics(ax,fname);
 end
+
+

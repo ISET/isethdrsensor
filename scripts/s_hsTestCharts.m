@@ -1,7 +1,6 @@
-Ex%% RGBW evaluation with test charts with the trained network
+%% RGBW evaluation with test charts with the trained network
 %
 % See also
-%   s_hthisSensor
 %
 
 %%
@@ -28,13 +27,10 @@ scene = sceneCreate('hdr image',...
 scene = sceneSet(scene,'fov',20);
 
 sceneRGB = sceneGet(scene,'srgb');
-%{
-sceneWindow(scene);
-scenePlot(scene,'hlineluminance',[474 1]);
-fname = 'scenehline.png'
-exportgraphics(gcf,fname);  % Options are possible
-%}
 
+sceneWindow(scene,'gamma',0.25,'render flag','rgb','show',true);
+scenePlot(scene,'luminance hline',[1 474]);
+set(gca,'yscale','log');
 
 %%
 [oi,wvf] = oiCreate('wvf');
@@ -78,26 +74,11 @@ end
 %% Make some comparison images
 
 ieNewGraphWin; imagesc(sceneRGB); axis image; axis off; truesize;
+
+% One of the dark images
 ieNewGraphWin; imagesc(imagecell{2}); axis image; axis off; truesize;
+
+% The same scene, but different exposure durations
 ieNewGraphWin; montage(imagecell);
-
-% ieNewGraphWin; montage(imagecell(1:3:end));
-
-%%
-%{
-    % GIF generation
-    if dd == 1
-        imagesc(srgb); axis image; axis off; truesize;
-        fname = sprintf('dynamicRange-%02d-%02d.gif',HH,mm);
-        gif(fname);
-        gif('DelayTime',3/15);
-        gif('LoopCount',1000);        
-    else
-        imagesc(srgb); axis image; axis off; truesize;
-    end
-    gif;
-    %}
-% web(fname);
-
 
 %% END
