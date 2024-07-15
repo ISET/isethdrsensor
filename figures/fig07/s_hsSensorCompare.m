@@ -97,22 +97,31 @@ sensorArray = sensorCreateArray('split pixel',...
 [sensorSplit, sensorArray] = sensorComputeArray(sensorArray,oiNight);
 sensorWindow(sensorSplit,'gamma',0.3);
 
-
 rgb = sensorGet(sensorSplit,'rgb');
 ieNewGraphWin; imagesc(rgb); truesize;
+%{
+ieNewGraphWin; 
+imagesc(sensorSplit.metadata.npixels); colormap(jet(4));
+colorbar;
+%}
 
+%{
 for ii=1:numel(sensorArray)
     ieAddObject(sensorArray(ii));
 end
+%}
 
-% rgbw = sensorGet(sensorAR,'color filters');
-% waveAR = sensorGet(sensorAR,'wave');
-% tmp = interp1(wave363,rgb,waveAR); rgbw(:,1:3) = tmp;
-% sensorAR = sensorSet(sensorAR,'color filters',rgbw);
-% sensorPlot(sensorAR,'color filters');
-% set(gca,'xlim',[400 700],'ylim',[0,1]);
+%% image process?
+
+ip = ipCreate;
+ip = ipCompute(ip,sensorSplit);
+ipWindow(ip);
+
+ip = ipCompute(ip,sensorRGB);
+ipWindow(ip);
 
 %%
+%{
 sensorAR = sensorCompute(sensorAR,oi);
 sensorGet(sensorAR,'exp time','ms')
 sensorWindow(sensorAR);
@@ -123,7 +132,7 @@ sensorWindow(imx490);
 
 sensorPlot(imx490,'dv hline',[1,150],'two lines',true)
 
-
+%}
 %% Turn off the noise and recompute
 
 %{
