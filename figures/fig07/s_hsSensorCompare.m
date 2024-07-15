@@ -37,7 +37,7 @@ imageID = '1114091636';   % Red car, green car
 
 %% Load the four light group
 
-fname = fullfile(isethdrsensorRootPath,'local',sprintf('HDR-scenes-%s',imageID));
+fname = fullfile(isethdrsensorRootPath,'data',sprintf('HDR-scenes-%s',imageID));
 load(fname,'scenes');
 
 %% Day
@@ -64,7 +64,10 @@ sensorRGB = sensorSet(sensorRGB,'match oi',oiDay);
 sensorRGB = sensorSet(sensorRGB,'exp time',2e-3);
 sensorRGB = sensorCompute(sensorRGB,oiDay);
 sensorWindow(sensorRGB,'gamma',0.5);
+rgb = sensorGet(sensorRGB,'rgb');
+ieNewGraphWin; imagesc(rgb); truesize;
 
+%% Night time
 sensorRGB = sensorSet(sensorRGB,'exp time',16e-3);
 sensorRGB = sensorCompute(sensorRGB,oiNight);
 sensorWindow(sensorRGB,'gamma',0.3);
@@ -88,15 +91,19 @@ pixelSize = sensorGet(sensorRGB,'pixel size');
 sensorSize = sensorGet(sensorRGB,'size');
 sensorArray = sensorCreateArray('split pixel',...
     'pixel size same fill factor',pixelSize,...
-    'exp time',2e-3, ...
+    'exp time',6e-3, ...
     'size',sensorSize);
 
-[sensorCombined, sensorArray] = sensorComputeArray(sensorArray,oiDay);
-sensorWindow(sensorCombined,'gamma',0.3);
+[sensorSplit, sensorArray] = sensorComputeArray(sensorArray,oiNight);
+sensorWindow(sensorSplit,'gamma',0.3);
 
 
-rgb = sensorGet(sensorCombined,'rgb');
+rgb = sensorGet(sensorSplit,'rgb');
 ieNewGraphWin; imagesc(rgb); truesize;
+
+for ii=1:numel(sensorArray)
+    ieAddObject(sensorArray(ii));
+end
 
 % rgbw = sensorGet(sensorAR,'color filters');
 % waveAR = sensorGet(sensorAR,'wave');
