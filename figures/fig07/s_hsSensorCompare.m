@@ -45,17 +45,10 @@ load(fname,'scenes');
 % wgts = [0.2306    0.0012    0.0001    0.5175]; % Night
 wgts = [0    0     0    100*0.5175]; % Day
 scene = hsSceneCreate(imageID,'weights',wgts,'denoise',false);
-% sceneWindow(scene); scene = sceneSet(scene,'render flag','clip');
+% sceneWindow(scene,'render flag','clip');
 oiDay = oiCompute(oi, scene,'aperture',aperture,'crop',true,'pixel size',3e-6);
 oiWindow(oiDay,'gamma',0.5,'render flag','rgb');
 % srgb = oiGet(oiDay,'rgb'); ieNewGraphWin; image(srgb); truesize
-
-%% Night
-wgts = [0.2306    0.0012    0.0001    1e-2*0.5175]; % Day
-scene = hsSceneCreate(imageID,'weights',wgts,'denoise',false);
-oiNight = oiCompute(oi, scene,'aperture',aperture,'crop',true,'pixel size',3e-6);
-oiWindow(oiNight,'render flag','rgb','gamma',0.2);
-% srgb = oiGet(oiNight,'rgb'); ieNewGraphWin; image(srgb); truesize
 
 %% First a standard RGB
 
@@ -67,6 +60,13 @@ sensorWindow(sensorRGB,'gamma',0.5);
 rgb = sensorGet(sensorRGB,'rgb');
 ieNewGraphWin; imagesc(rgb); truesize;
 
+
+%% Night
+wgts    = [0.2306    0.0012    0.0001    1e-2*0.5175]; % Day
+scene   = hsSceneCreate(imageID,'weights',wgts,'denoise',false);
+oiNight = oiCompute(oi, scene,'aperture',aperture,'crop',true,'pixel size',3e-6);
+oiWindow(oiNight,'render flag','rgb','gamma',0.2);
+
 %% Night time
 sensorRGB = sensorSet(sensorRGB,'exp time',16e-3);
 sensorRGB = sensorCompute(sensorRGB,oiNight);
@@ -74,31 +74,63 @@ sensorWindow(sensorRGB,'gamma',0.3);
 
 rgb = sensorGet(sensorRGB,'rgb');
 ieNewGraphWin; imagesc(rgb); truesize;
+imName = sprintf('rgbSensor.png');
+imwrite(rgb,fullfile(isethdrsensorRootPath,'local',imName));
+
+sensorRGB = sensorSet(sensorRGB,'noise flag',-1);
+sensorRGB = sensorCompute(sensorRGB,oiNight);
+
+% We probably need to reset gamma to 1 before these sensorGet calls
+rgbNoisefree = sensorGet(sensorRGB,'rgb');
+
+rmse(rgb(:),rgbNoisefree(:))
 
 %%  Then the RGBW version
 sensorRGBW = sensorCreate('ar0132at',[],'rgbw');
 sensorRGBW = sensorSet(sensorRGBW,'match oi',oiNight);
-sensorRGBW = sensorSet(sensorRGBW,'exp time',2e-3);
+sensorRGBW = sensorSet(sensorRGBW,'exp time',16e-3);
 sensorRGBW = sensorCompute(sensorRGBW,oiNight);
 sensorWindow(sensorRGBW,'gamma',0.3);
 
+% We probably need to reset gamma to 1 before these sensorGet calls
 rgb = sensorGet(sensorRGBW,'rgb');
 ieNewGraphWin; imagesc(rgb); truesize;
+imName = sprintf('rgbwSensor.png');
+imwrite(rgb,fullfile(isethdrsensorRootPath,'local',imName));
 
+sensorRGBW = sensorSet(sensorRGBW,'noise flag',-1);
+sensorRGBW = sensorCompute(sensorRGBW,oiNight);
+rgbNoisefree = sensorGet(sensorRGBW,'rgb');
+rmse(rgb(:),rgbNoisefree(:))
 
 %% Split pixel calculation
 pixelSize = sensorGet(sensorRGB,'pixel size');
 sensorSize = sensorGet(sensorRGB,'size');
 sensorArray = sensorCreateArray('split pixel',...
     'pixel size same fill factor',pixelSize,...
-    'exp time',6e-3, ...
+    'exp time',16e-3, ...
     'size',sensorSize);
 
-[sensorSplit, sensorArray] = sensorComputeArray(sensorArray,oiNight);
+sensorSplit = sensorComputeArray(sensorArray,oiNight);
 sensorWindow(sensorSplit,'gamma',0.3);
 
+% We probably need to reset gamma to 1 before these sensorGet calls
 rgb = sensorGet(sensorSplit,'rgb');
 ieNewGraphWin; imagesc(rgb); truesize;
+imName = sprintf('splitSensor.png');
+imwrite(rgb,fullfile(isethdrsensorRootPath,'local',imName));
+
+sensorArray = sensorCreateArray('split pixel',...
+    'pixel size same fill factor',pixelSize,...
+    'exp time',16e-3, ...
+    'size',sensorSize, ...
+    'noise flag',-1);
+[sensorSplit, sensorArray] = sensorComputeArray(sensorArray,oiNight);
+rgbNoisefree = sensorGet(sensorSplit,'rgb');
+
+rmse(rgb(:),rgbNoisefree(:))
+
+
 %{
 ieNewGraphWin; 
 imagesc(sensorSplit.metadata.npixels); colormap(jet(4));
