@@ -142,7 +142,7 @@ ipWindow(ip,'render flag','rgb','gamma',0.3);
 % Then we switch to the calculation below inside of ipCompute() 
 %
 
-%% First a standard RGB
+%% RGBW and network demosaic.
 
 sensorRGBW = sensorCreate('ar0132at',[],'rgbw');
 sensorRGBW = sensorSet(sensorRGBW,'match oi',oiDay);
@@ -152,35 +152,8 @@ sensorWindow(sensorRGBW,'gamma',0.5);
 rgb = sensorGet(sensorRGBW,'rgb');
 ieNewGraphWin; imagesc(rgb); truesize;
 
-
-exrDir = fullfile(isethdrsensorRootPath,'local');
-baseName = fullfile(exrDir,'rgbw');
-fname  = sensor2EXR(sensorRGBW,[baseName,'.exr']);
-ipName = sprintf('%s-ip.exr',baseName);
-isetDemosaicNN('rgbw', fname, ipName);
-% img = exrread(fname);
-% ieNewGraphWin; imagesc(abs(img.^0.3)); truesize
-
-% Create the rendering transforms
-wave     = sensorGet(sensorRGBW,'wave');
-sensorQE = sensorGet(sensorRGBW,'spectral qe');
-targetQE = ieReadSpectra('xyzQuanta',wave);
-T{1} = imageSensorTransform(sensorQE(:,1:3),targetQE,'D65',wave,'mcc');
-T{2} = eye(3,3);
-T{3} = ieInternal2Display(ip);
-
-ip = ipSet(ip,'demosaic method','skip');
-ip = ipSet(ip,'transforms',T);
-ip = ipSet(ip,'transform method','current');
-
-img = exrread(ipName);
-% ieNewGraphWin; imagesc(abs(img.^0.2));
-
-ip = ipSet(ip,'sensor space',img);
-ip = ipCompute(ip,sensorRGBW);
-
-[~,ipName] = fileparts(ipName);
-ip = ipSet(ip','name',ipName);
+% The demosaic is pretty slow.
+ip = ipCompute(ip,sensorRGBW,'network demosaic','rgbw');
 ipWindow(ip,'gamma',1,'render flag','rgb');
 
 
