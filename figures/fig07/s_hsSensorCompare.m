@@ -70,6 +70,7 @@ oiWindow(oiNight,'render flag','rgb','gamma',0.2);
 
 %% Night time
 sensorRGB = sensorSet(sensorRGB,'exp time',16e-3);
+sensorRGB = sensorSet(sensorRGB,'noise flag',2);
 sensorRGB = sensorCompute(sensorRGB,oiNight);
 sensorWindow(sensorRGB,'gamma',0.3);
 
@@ -78,13 +79,20 @@ ieNewGraphWin; imagesc(rgb); truesize;
 imName = sprintf('rgbSensor.png');
 imwrite(rgb,fullfile(isethdrsensorRootPath,'local',imName));
 
-sensorRGB = sensorSet(sensorRGB,'noise flag',-1);
-sensorRGB = sensorCompute(sensorRGB,oiNight);
+sensorRGB2 = sensorSet(sensorRGB,'noise flag',-1);
+sensorRGB2 = sensorSet(sensorRGB2,'name','no noise');
+sensorRGB2 = sensorCompute(sensorRGB2,oiNight);
+sensorWindow(sensorRGB2,'gamma',0.3);
 
 % We probably need to reset gamma to 1 before these sensorGet calls
-rgbNoisefree = sensorGet(sensorRGB,'rgb');
+rgbNoisefree = sensorGet(sensorRGB2,'rgb');
 
 rmse(rgb(:),rgbNoisefree(:))
+
+% sensorPlot(sensorRGB2,'volts hline',[1 859], 'two lines',true);
+% sensorPlot(sensorRGB,'volts hline',[1 859], 'two lines',true);
+sensorPlot(sensorRGB,'volts hline',[1 859]);
+sensorPlot(sensorRGB2,'volts hline',[1 859]);
 
 %% Split pixel calculation
 
@@ -109,10 +117,15 @@ sensorArray = sensorCreateArray('array type','ovt',...
     'exp time',16e-3, ...
     'size',sensorSize, ...
     'noise flag',-1);
-[sensorSplit, sensorArray] = sensorComputeArray(sensorArray,oiNight);
+[sensorSplit2, sensorArray] = sensorComputeArray(sensorArray,oiNight);
 rgbNoisefree = sensorGet(sensorSplit,'rgb');
 
 rmse(rgb(:),rgbNoisefree(:))
+
+% sensorPlot(sensorSplit2,'volts hline',[1 859], 'two lines',true);
+% sensorPlot(sensorSplit,'volts hline',[1 859], 'two lines',true);
+sensorPlot(sensorSplit2,'volts hline',[1 859]);
+sensorPlot(sensorSplit,'volts hline',[1 859]);
 
 %{
 ieNewGraphWin; 

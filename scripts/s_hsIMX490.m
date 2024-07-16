@@ -3,6 +3,7 @@
 % Not up to date.  But useful to start the split pixel simulation for
 % the paper.
 %
+% Look at s_hsSensorCompare.  Then maybe update this.
 %
 
 %%
