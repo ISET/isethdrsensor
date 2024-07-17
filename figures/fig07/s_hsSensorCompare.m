@@ -1,16 +1,32 @@
 %% Make a figure comparing the different types of sensors
 %
-% For a couple of scenes, render them through some kind of optics onto the
+% We compare the rendering of a nighttime HDR scene with a standard
+% automotive RGB sensor and a similar sensor, but with the split pixel
+% design, as proposed by Omnivision.
 %
-% Here are the scenes.  Refresh from time to time.
+% We write out the sensor images, and we also compare the noise along
+% a couple of lines by plotting the response and plotting the
+% simulation noise free.
 %
-%   hsSceneDescriptions;
+% We also calculate the variance explained (R squared) of the noise
+% free and the noisy, to illustrate that the split pixel design does
+% better.
 %
-% The light group names
-%   lgt = {'headlights','streetlights','otherlights','skymap'};
+% The parallel script s_hsSplitPixelParameters does an analysis with
+% the split pixel and varying parameters.
+%
+% See also
+%   s_hsSplitPixelParameters
 
 %%
 ieInit;
+
+% imageID = '1112201236'; % - Good one
+imageID = '1114091636';   % Red car, green car
+
+%% Day scene weights
+
+% sceneWindow(scene,'render flag','clip');
 
 %% Create the optics
 [oi,wvf] = oiCreate('wvf');
@@ -32,34 +48,19 @@ params.linewidth = 2;
 aperture = wvfAperture(wvf,params);
 oi = oiSet(oi,'wvf zcoeffs',0,'defocus');
 
-% imageID = '1112201236'; % - Good one
-imageID = '1114091636';   % Red car, green car
+%%  If you want the oiDay, this is how
 
-%% Load the four light group
-
-fname = fullfile(isethdrsensorRootPath,'data',sprintf('HDR-scenes-%s',imageID));
-load(fname,'scenes');
-
-%% Day
-
+%{
 wgts = [0    0     0    100*0.5175]; % Day
 scene = hsSceneCreate(imageID,'weights',wgts,'denoise',false);
-% sceneWindow(scene,'render flag','clip');
 oiDay = oiCompute(oi, scene,'aperture',aperture,'crop',true,'pixel size',3e-6);
 oiWindow(oiDay,'gamma',0.5,'render flag','rgb');
-% srgb = oiGet(oiDay,'rgb'); ieNewGraphWin; image(srgb); truesize
+srgb = oiGet(oiDay,'rgb'); ieNewGraphWin; image(srgb); truesize
+%}
 
-%% First a standard RGB
+%% Night scene weights
 
-sensorRGB = sensorCreate('ar0132at');
-sensorRGB = sensorSet(sensorRGB,'match oi',oiDay);
-sensorRGB = sensorSet(sensorRGB,'exp time',2e-3);
-sensorRGB = sensorCompute(sensorRGB,oiDay);
-sensorWindow(sensorRGB,'gamma',0.5);
-rgb = sensorGet(sensorRGB,'rgb');
-ieNewGraphWin; imagesc(rgb); truesize;
-
-%% Night
+% For final, remember to turn off denoise
 
 % Experimenting with how dark.  4 log units down gets night
 % But three really doesn't.
@@ -68,7 +69,10 @@ scene   = hsSceneCreate(imageID,'weights',wgts,'denoise',false);
 oiNight = oiCompute(oi, scene,'aperture',aperture,'crop',true,'pixel size',3e-6);
 oiWindow(oiNight,'render flag','rgb','gamma',0.2);
 
-%% Night time
+%% Standard rgb
+
+sensorRGB = sensorCreate('ar0132at',[],'rgb');
+sensorRGB = sensorSet(sensorRGB,'match oi',oiNight);
 sensorRGB = sensorSet(sensorRGB,'exp time',16e-3);
 sensorRGB = sensorSet(sensorRGB,'noise flag',2);
 sensorRGB = sensorCompute(sensorRGB,oiNight);
@@ -79,22 +83,41 @@ ieNewGraphWin; imagesc(rgb); truesize;
 imName = sprintf('rgbSensor.png');
 imwrite(rgb,fullfile(isethdrsensorRootPath,'local',imName));
 
+%% Turn off the noise and recompute
+
+% For this scene ID:  1114091636
+whichLine = 859;   
+% whichLine = 142; % An interesting one, also
+
 sensorRGB2 = sensorSet(sensorRGB,'noise flag',-1);
 sensorRGB2 = sensorSet(sensorRGB2,'name','no noise');
 sensorRGB2 = sensorCompute(sensorRGB2,oiNight);
 sensorWindow(sensorRGB2,'gamma',0.3);
 
-% We probably need to reset gamma to 1 before these sensorGet calls
-rgbNoisefree = sensorGet(sensorRGB2,'rgb');
+% sensorPlot(sensorRGB2,'volts hline',[1 whichLine], 'two lines',true);
+% sensorPlot(sensorRGB,'volts hline',[1 whichLine], 'two lines',true);
+uDataRGB = sensorPlot(sensorRGB,'volts hline',[1 whichLine],'no fig',true);
+uDataRGB2 = sensorPlot(sensorRGB2,'volts hline',[1 whichLine],'no fig',true);
+channel = 1;
+x = uDataRGB.data{channel};
+y = uDataRGB2.data{channel};
+s  = mean(x,'all','omitnan');
+s2 = mean(y,'all','omitnan');
+peak = 0.98/max(x);
+ieNewGraphWin; 
+plot(uDataRGB.pos{1},(peak*x),'r-', ...
+    uDataRGB2.pos{1},(peak*y)*(s/s2),'k-','LineWidth',2);
+grid on;
+xlabel('Position (um)')
+ylabel('Relative volts');
 
-rmse(rgb(:),rgbNoisefree(:))
+% Assuming x and y are your data vectors
+X = [ones(length(x), 1), x];  % Add a column of ones for the intercept
+[b,~,~,~,stats] = regress(y, X);
+fprintf('RGB R_squared" %f\n',stats(1));
 
-% sensorPlot(sensorRGB2,'volts hline',[1 859], 'two lines',true);
-% sensorPlot(sensorRGB,'volts hline',[1 859], 'two lines',true);
-sensorPlot(sensorRGB,'volts hline',[1 859]);
-sensorPlot(sensorRGB2,'volts hline',[1 859]);
-
-%% Split pixel calculation
+%% Split pixel , night time.  Default parameters.
+% See s_hsSplitPixelParameters
 
 pixelSize = sensorGet(sensorRGB,'pixel size');
 sensorSize = sensorGet(sensorRGB,'size');
@@ -104,13 +127,16 @@ sensorArray = sensorCreateArray('array type','ovt',...
     'size',sensorSize);
 
 sensorSplit = sensorComputeArray(sensorArray,oiNight);
-sensorWindow(sensorSplit,'gamma',0.3);
+% sensorWindow(sensorSplit,'gamma',0.3);
 
 % We probably need to reset gamma to 1 before these sensorGet calls
 rgb = sensorGet(sensorSplit,'rgb');
-ieNewGraphWin; imagesc(rgb); truesize;
+
+% ieNewGraphWin; imagesc(rgb); truesize;
 imName = sprintf('splitSensor.png');
 imwrite(rgb,fullfile(isethdrsensorRootPath,'local',imName));
+
+%% Turn off the noise and compare
 
 sensorArray = sensorCreateArray('array type','ovt',...
     'pixel size same fill factor',pixelSize,...
@@ -118,171 +144,45 @@ sensorArray = sensorCreateArray('array type','ovt',...
     'size',sensorSize, ...
     'noise flag',-1);
 [sensorSplit2, sensorArray] = sensorComputeArray(sensorArray,oiNight);
-rgbNoisefree = sensorGet(sensorSplit,'rgb');
 
-rmse(rgb(:),rgbNoisefree(:))
+% sensorPlot(sensorSplit2,'volts hline',[1 whichLine], 'two lines',true);
+% sensorPlot(sensorSplit,'volts hline',[1 whichLine], 'two lines',true);
+uDataRGB = sensorPlot(sensorSplit,'volts hline',[1 whichLine],'no fig',true);
+uDataRGB2 = sensorPlot(sensorSplit2,'volts hline',[1 whichLine],'no fig',true);
 
-% sensorPlot(sensorSplit2,'volts hline',[1 859], 'two lines',true);
-% sensorPlot(sensorSplit,'volts hline',[1 859], 'two lines',true);
-sensorPlot(sensorSplit2,'volts hline',[1 859]);
-sensorPlot(sensorSplit,'volts hline',[1 859]);
+% The two sensor data sets need to be scaled because of the brittle
+% way we scale the volts in the returned sensorSplit.  It is very
+% sensitive to the presence of noise.  We also scale so that the
+% largest voltage in the noise free is 0.98 volts
 
-%{
+channel = 1;
+x = uDataRGB.data{channel};
+y = uDataRGB2.data{channel};
+s  = mean(x,'all','omitnan');
+s2 = mean(y,'all','omitnan');
+peak = 0.98/max(x);
 ieNewGraphWin; 
-imagesc(sensorSplit.metadata.npixels); colormap(jet(4)); truesize;
-colorbar;
-%}
+plot(uDataRGB.pos{1},(peak*x),'r-', ...
+    uDataRGB2.pos{1},(peak*y)*(s/s2),'k-','LineWidth',2);
+grid on;
+xlabel('Position (um)')
+ylabel('Relative volts');
+
+% Assuming x and y are your data vectors
+X = [ones(length(x), 1), x];  % Add a column of ones for the intercept
+[b,~,~,~,stats] = regress(y, X);
+fprintf('Split R_squared" %f\n',stats(1));
+% slope = b(2)
+% intercept = b(1)
+
 
 %% image process?
 
 ip = ipCreate;
 ip = ipCompute(ip,sensorSplit);
-ipWindow(ip);
+ipWindow(ip,'render flag','rgb','gamma',0.25);
 
 ip = ipCompute(ip,sensorRGB);
-ipWindow(ip,'render flag','rgb','gamma',0.3);
-
-%% Now the RGBW, which will become a function
-
-% Not working yet.  I think the network is trained on the ar0132at
-% 'rgbw' sensor, so that part is OK.  But maybe I need to update the
-% network on my local machine?  Asking Zhenyi.
-%
-% The ipCompute command should become something like
-%
-%   ipCompute(ip,sensorRGBW,'neural network','ar0132at-rgbw');
-%
-% Then we switch to the calculation below inside of ipCompute() 
-%
-
-%% RGBW and network demosaic.
-
-sensorRGBW = sensorCreate('ar0132at',[],'rgbw');
-sensorRGBW = sensorSet(sensorRGBW,'match oi',oiDay);
-sensorRGBW = sensorSet(sensorRGBW,'exp time',2e-3);
-sensorRGBW = sensorCompute(sensorRGBW,oiDay);
-sensorWindow(sensorRGBW,'gamma',0.5);
-rgb = sensorGet(sensorRGBW,'rgb');
-ieNewGraphWin; imagesc(rgb); truesize;
-
-% The demosaic is pretty slow.
-ip = ipCompute(ip,sensorRGBW,'network demosaic','rgbw');
-ipWindow(ip,'gamma',1,'render flag','rgb');
-
-
-%%
-%{
-sensorAR = sensorCompute(sensorAR,oi);
-sensorGet(sensorAR,'exp time','ms')
-sensorWindow(sensorAR);
-
-[imx490, metadata] = imx490Compute(oi,'exp time',2e-3);
-sensorGet(imx490,'exp time','ms')
-sensorWindow(imx490);
-
-sensorPlot(imx490,'dv hline',[1,150],'two lines',true)
-
-%}
-%% Turn off the noise and recompute
-
-%{
-sensor = sensorSet(sensor,'noiseFlag',0);
-sensor = sensorSet(sensor,'name','noise free');
-sensor = sensorCompute(sensor,oi);
-
-ip = ipCompute(ip,sensor);
-ipWindow(ip);
-%}
-
-%% For each sensor
-for ss = 1:2
-
-    if ss==1
-        thisSensor = sensorRGBW;
-        thisType = 'rgbw';
-    elseif ss == 2
-        thisSensor = sensorRGB;
-        thisType = 'rgb';
-    end
-
-    thisSensor = sensorSet(thisSensor,'match oi',oi);
-    thisSensor = sensorSet(thisSensor,'name',thisType);
-
-    %{
-      qe = sensorGet(thisSensor,'spectral qe');
-      cond(qe)
-    %}
-
-    % Shorter durations have more noise.
-    expDuration = [1/30 1/60 1/120];
-    
-    fname = cell(numel(expDuration),1);
-    fprintf('Creating EXR ...');
-    for dd = 1:numel(expDuration)
-        thisSensor = sensorSet(thisSensor,'exp time',expDuration(dd));
-        thisSensor = sensorCompute(thisSensor,oi);
-        fname{dd}  = sprintf('%02dH%02dS-%s-%.2f.exr',uint8(HH),uint8(mm),thisType,sensorGet(thisSensor,'exp time','ms'));
-        fname{dd}  = sensor2EXR(thisSensor,fullfile(exrDir,fname{dd}));
-    end
-    disp('done.')
-
-    % Demosaic the RGBW using the trained Restormer network
-
-    % Run demosaic on each of the sensor EXR files. Write them out to a
-    % corresponding ipEXR file.
-    ipEXR = cell(1,numel(expDuration));
-    for ii=1:numel(expDuration)
-        fprintf('Scene %d: ',ii);
-        [p,n,ext] = fileparts(fname{ii});
-        ipEXR{ii} = sprintf('%s-ip%s',fullfile(p,n),ext);
-        isetDemosaicNN(thisType, fname{ii}, ipEXR{ii});
-    end
-
-    % Find the combined transform for the RGB sensors
-
-    ip = ipCreate;
-
-    % Create the rendering transforms
-    wave     = sensorGet(thisSensor,'wave');
-    sensorQE = sensorGet(thisSensor,'spectral qe');
-    targetQE = ieReadSpectra('xyzQuanta',wave);
-    T{1} = imageSensorTransform(sensorQE(:,1:3),targetQE,'D65',wave,'mcc');
-    T{2} = eye(3,3);
-    T{3} = ieInternal2Display(ip);
-
-    ip = ipSet(ip,'demosaic method','skip');
-    ip = ipSet(ip,'transforms',T);
-    ip = ipSet(ip,'transform method','current');
-
-    for ii=1:numel(ipEXR)
-        img = exrread(ipEXR{ii});
-
-        ip = ipSet(ip,'sensor space',img);
-
-        ip = ipCompute(ip,thisSensor);
-        [~,ipName] = fileparts(ipEXR{ii});
-        ip = ipSet(ip','name',ipName);
-        ipWindow(ip);
-    end
-
-end
-
-%% Try some ipPlots
-
-% Note that in the dark regions, there is more noise in the RGB thasn the
-% RGBW.  Not earthshaking, but real. Mostly visible for the short duration
-% cases, where there is more noise altogether.
-
-vcSetSelectedObject('ip',7);   % RGBW
-ip = ieGetObject('ip'); [uDataRGBW,hdlRGBW] = ipPlot(ip,'horizontal line', [1,470]);
-
-vcSetSelectedObject('ip',8);   % RGB
-ip = ieGetObject('ip'); [uDataRGB,hdlRGB] = ipPlot(ip,'horizontal line', [1,470]);
-
-nChildren = 3;
-for ii=1:nChildren
-    set(hdlRGBW.Children(ii),'ylim',[0 10^-2]);
-    set(hdlRGB.Children(ii),'ylim',[0 10^-2]);
-end
+ipWindow(ip,'render flag','rgb','gamma',0.25);
 
 %%
