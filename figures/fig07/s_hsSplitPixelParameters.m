@@ -35,13 +35,8 @@ oi = oiSet(oi,'wvf zcoeffs',0,'defocus');
 % imageID = '1112201236'; % - Good one
 imageID = '1114091636';   % Red car, green car
 
-%% Load the four light group
-
-fname = fullfile(isethdrsensorRootPath,'data',sprintf('HDR-scenes-%s',imageID));
-load(fname,'scenes');
-
 %% Day
-
+%{
 wgts = [0    0     0    100*0.5175]; % Day
 scene = hsSceneCreate(imageID,'weights',wgts,'denoise',false);
 % sceneWindow(scene,'render flag','clip');
@@ -58,7 +53,7 @@ sensorRGB = sensorCompute(sensorRGB,oiDay);
 sensorWindow(sensorRGB,'gamma',0.5);
 rgb = sensorGet(sensorRGB,'rgb');
 ieNewGraphWin; imagesc(rgb); truesize;
-
+%}
 %% Night
 
 % Experimenting with how dark.  4 log units down gets night
@@ -68,90 +63,71 @@ scene   = hsSceneCreate(imageID,'weights',wgts,'denoise',false);
 oiNight = oiCompute(oi, scene,'aperture',aperture,'crop',true,'pixel size',3e-6);
 oiWindow(oiNight,'render flag','rgb','gamma',0.2);
 
-%% Night time
-sensorRGB = sensorSet(sensorRGB,'exp time',16e-3);
-sensorRGB = sensorSet(sensorRGB,'noise flag',2);
-sensorRGB = sensorCompute(sensorRGB,oiNight);
-sensorWindow(sensorRGB,'gamma',0.3);
+%% Split pixel parameters
 
-rgb = sensorGet(sensorRGB,'rgb');
-ieNewGraphWin; imagesc(rgb); truesize;
-imName = sprintf('rgbSensor.png');
-imwrite(rgb,fullfile(isethdrsensorRootPath,'local',imName));
-
-sensorRGB2 = sensorSet(sensorRGB,'noise flag',-1);
-sensorRGB2 = sensorSet(sensorRGB2,'name','no noise');
-sensorRGB2 = sensorCompute(sensorRGB2,oiNight);
-sensorWindow(sensorRGB2,'gamma',0.3);
-
-% We probably need to reset gamma to 1 before these sensorGet calls
-rgbNoisefree = sensorGet(sensorRGB2,'rgb');
-
-rmse(rgb(:),rgbNoisefree(:))
-
-% sensorPlot(sensorRGB2,'volts hline',[1 859], 'two lines',true);
-% sensorPlot(sensorRGB,'volts hline',[1 859], 'two lines',true);
-sensorPlot(sensorRGB,'volts hline',[1 859]);
-sensorPlot(sensorRGB2,'volts hline',[1 859]);
-
-%% Split pixel calculation
-
-pixelSize = sensorGet(sensorRGB,'pixel size');
-sensorSize = sensorGet(sensorRGB,'size');
+pixelSize = 3e-6;
+sensorSize = [1082 1926];
 sensorArray = sensorCreateArray('array type','ovt',...
     'pixel size same fill factor',pixelSize,...
     'exp time',16e-3, ...
     'size',sensorSize);
 
 sensorSplit = sensorComputeArray(sensorArray,oiNight);
-sensorWindow(sensorSplit,'gamma',0.3);
-
-% We probably need to reset gamma to 1 before these sensorGet calls
-rgb = sensorGet(sensorSplit,'rgb');
-ieNewGraphWin; imagesc(rgb); truesize;
-imName = sprintf('splitSensor.png');
-imwrite(rgb,fullfile(isethdrsensorRootPath,'local',imName));
-
-sensorArray = sensorCreateArray('array type','ovt',...
-    'pixel size same fill factor',pixelSize,...
-    'exp time',16e-3, ...
-    'size',sensorSize, ...
-    'noise flag',-1);
-[sensorSplit2, sensorArray] = sensorComputeArray(sensorArray,oiNight);
-rgbNoisefree = sensorGet(sensorSplit,'rgb');
-
-rmse(rgb(:),rgbNoisefree(:))
-
-% sensorPlot(sensorSplit2,'volts hline',[1 859], 'two lines',true);
-% sensorPlot(sensorSplit,'volts hline',[1 859], 'two lines',true);
-sensorPlot(sensorSplit2,'volts hline',[1 859]);
-sensorPlot(sensorSplit,'volts hline',[1 859]);
-
-%{
-ieNewGraphWin; 
-imagesc(sensorSplit.metadata.npixels); colormap(jet(4)); truesize;
-colorbar;
-%}
+% sensorWindow(sensorSplit,'gamma',0.3);
 
 %% image process?
 
 ip = ipCreate;
 ip = ipCompute(ip,sensorSplit);
-ipWindow(ip);
-
-ip = ipCompute(ip,sensorRGB);
 ipWindow(ip,'render flag','rgb','gamma',0.3);
 
-%% Now the RGBW, which will become a function
+%% Here are some key parameters
 
-% Not working yet.  I think the network is trained on the ar0132at
-% 'rgbw' sensor, so that part is OK.  But maybe I need to update the
-% network on my local machine?  Asking Zhenyi.
-%
-% The ipCompute command should become something like
-%
-%   ipCompute(ip,sensorRGBW,'neural network','ar0132at-rgbw');
-%
-% Then we switch to the calculation below inside of ipCompute() 
-%
+% The 'ovt' model has 
+for ii=1:4
+    fprintf('Sensor %d : Well %g, Volt S %g, Conv Gain %g\n',...
+        ii, ...
+        sensorGet(sensorArray(ii),'pixel well capacity'),   ...
+        sensorGet(sensorArray(ii),'pixel voltage swing'), ...
+    sensorGet(sensorArray(ii),'pixel conversion gain'));
+end
 
+%% Default IMX490
+
+sensorArray = sensorCreateArray('array type','imx490',...
+    'pixel size same fill factor',pixelSize,...
+    'exp time',16e-3, ...
+    'size',sensorSize);
+
+for ii=1:4
+    fprintf('Sensor %d : Well %g, Volt S %g, Conv Gain %g\n',...
+        ii, ...
+        sensorGet(sensorArray(ii),'pixel well capacity'),   ...
+        sensorGet(sensorArray(ii),'pixel voltage swing'), ...
+    sensorGet(sensorArray(ii),'pixel conversion gain'));
+end
+
+%% Can we set the well capacity to be equal in all?
+
+% We get to set conversion gain and voltage swing
+% This implies the well capacity.
+% I think we should be dealing with spectral QE and analog gain, not
+% conversion gain.
+wellCapacity = 6e+4;
+voltageSwing = 1.024;
+conversionGain = voltageSwing/wellCapacity;
+sensorArray = sensorCreateArray('array type','imx490',...
+    'pixel size same fill factor',pixelSize,...
+    'exp time',16e-3, ...
+    'size',sensorSize, ...
+    'pixel conversion gain',conversionGain);
+
+for ii=1:4
+    fprintf('%s : Well %g, Volt S %g, Conv Gain %g\n',...
+        sensorGet(sensorArray(ii),'name'), ...
+        sensorGet(sensorArray(ii),'pixel well capacity'),   ...
+        sensorGet(sensorArray(ii),'pixel voltage swing'), ...
+        sensorGet(sensorArray(ii),'pixel conversion gain'));
+end
+
+%% END
