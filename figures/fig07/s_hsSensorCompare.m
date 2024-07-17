@@ -69,7 +69,7 @@ scene   = hsSceneCreate(imageID,'weights',wgts,'denoise',false);
 oiNight = oiCompute(oi, scene,'aperture',aperture,'crop',true,'pixel size',3e-6);
 oiWindow(oiNight,'render flag','rgb','gamma',0.2);
 
-%% Standard rgb
+%% Standard automotive rgb
 
 sensorRGB = sensorCreate('ar0132at',[],'rgb');
 sensorRGB = sensorSet(sensorRGB,'match oi',oiNight);
@@ -110,6 +110,8 @@ plot(uDataRGB.pos{1},(peak*x),'r-', ...
 grid on;
 xlabel('Position (um)')
 ylabel('Relative volts');
+tmp = sprintf('rgb-%d-noise.pdf',whichLine);
+exportgraphics(gcf,fullfile(isethdrsensorRootPath,'local',tmp));
 
 % Assuming x and y are your data vectors
 X = [ones(length(x), 1), x];  % Add a column of ones for the intercept
@@ -121,7 +123,7 @@ fprintf('RGB R_squared" %f\n',stats(1));
 
 pixelSize = sensorGet(sensorRGB,'pixel size');
 sensorSize = sensorGet(sensorRGB,'size');
-sensorArray = sensorCreateArray('array type','ovt',...
+sensorArray = sensorCreateArray('array type','imx490',...
     'pixel size same fill factor',pixelSize,...
     'exp time',16e-3, ...
     'size',sensorSize);
@@ -167,6 +169,8 @@ plot(uDataRGB.pos{1},(peak*x),'r-', ...
 grid on;
 xlabel('Position (um)')
 ylabel('Relative volts');
+tmp = sprintf('split-%d-noise.pdf',whichLine);
+exportgraphics(gcf,fullfile(isethdrsensorRootPath,'local',tmp));
 
 % Assuming x and y are your data vectors
 X = [ones(length(x), 1), x];  % Add a column of ones for the intercept
