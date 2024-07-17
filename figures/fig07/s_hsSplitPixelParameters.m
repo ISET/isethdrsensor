@@ -67,13 +67,17 @@ oiWindow(oiNight,'render flag','rgb','gamma',0.2);
 
 pixelSize = 3e-6;
 sensorSize = [1082 1926];
-sensorArray = sensorCreateArray('array type','ovt',...
+sensorArray = sensorCreateArray('array type','imx490',...
     'pixel size same fill factor',pixelSize,...
     'exp time',16e-3, ...
     'size',sensorSize);
 
 sensorSplit = sensorComputeArray(sensorArray,oiNight);
 % sensorWindow(sensorSplit,'gamma',0.3);
+%{
+ rgb = sensorGet(sensorSplit,'rgb');
+ ieNewGraphWin; imagesc(rgb); truesize;
+%}
 
 %% image process?
 
@@ -109,7 +113,8 @@ end
 
 %% Can we set the well capacity to be equal in all?
 
-% We get to set conversion gain and voltage swing
+% We can set conversion gain and voltage swing
+%
 % This implies the well capacity.
 % I think we should be dealing with spectral QE and analog gain, not
 % conversion gain.
@@ -131,3 +136,11 @@ for ii=1:4
 end
 
 %% END
+
+
+
+%%
+
+  
+
+%}
