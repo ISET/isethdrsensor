@@ -65,7 +65,7 @@ srgb = oiGet(oiDay,'rgb'); ieNewGraphWin; image(srgb); truesize
 % Experimenting with how dark.  4 log units down gets night
 % But three really doesn't.
 wgts    = [0.2306    0.0012    0.0001    1e-2*0.5175]; % Night
-scene   = hsSceneCreate(imageID,'weights',wgts,'denoise',false);
+scene   = hsSceneCreate(imageID,'weights',wgts,'denoise',true);
 oiNight = oiCompute(oi, scene,'aperture',aperture,'crop',true,'pixel size',3e-6);
 oiWindow(oiNight,'render flag','rgb','gamma',0.2);
 
@@ -110,6 +110,7 @@ plot(uDataRGB.pos{1},(peak*x),'r-', ...
 grid on;
 xlabel('Position (um)')
 ylabel('Relative volts');
+title('RGB pixel');
 tmp = sprintf('rgb-%d-noise.pdf',whichLine);
 exportgraphics(gcf,fullfile(isethdrsensorRootPath,'local',tmp));
 
@@ -123,13 +124,18 @@ fprintf('RGB R_squared" %f\n',stats(1));
 
 pixelSize = sensorGet(sensorRGB,'pixel size');
 sensorSize = sensorGet(sensorRGB,'size');
+
+% IMX490 or OVT
+% I ran both.  The IMX490 does well.  The OVT design, not as well.  I think
+% that is interesting.  3-capture vs. 4-capture.  The additional HCG in the
+% small pixel picks up the dark region!
 sensorArray = sensorCreateArray('array type','imx490',...
     'pixel size same fill factor',pixelSize,...
     'exp time',16e-3, ...
     'size',sensorSize);
 
 sensorSplit = sensorComputeArray(sensorArray,oiNight);
-% sensorWindow(sensorSplit,'gamma',0.3);
+sensorWindow(sensorSplit,'gamma',0.3);
 
 % We probably need to reset gamma to 1 before these sensorGet calls
 rgb = sensorGet(sensorSplit,'rgb');
@@ -169,6 +175,7 @@ plot(uDataRGB.pos{1},(peak*x),'r-', ...
 grid on;
 xlabel('Position (um)')
 ylabel('Relative volts');
+title('Split pixel');
 tmp = sprintf('split-%d-noise.pdf',whichLine);
 exportgraphics(gcf,fullfile(isethdrsensorRootPath,'local',tmp));
 
