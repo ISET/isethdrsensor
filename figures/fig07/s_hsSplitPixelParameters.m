@@ -12,6 +12,13 @@
 %%
 ieInit;
 
+% imageID = '1112201236'; % - Good one
+imageID = '1114091636';   % Red car, green car
+
+%% Day scene weights
+
+% sceneWindow(scene,'render flag','clip');
+
 %% Create the optics
 [oi,wvf] = oiCreate('wvf');
 params = wvfApertureP;
@@ -32,36 +39,33 @@ params.linewidth = 2;
 aperture = wvfAperture(wvf,params);
 oi = oiSet(oi,'wvf zcoeffs',0,'defocus');
 
-% imageID = '1112201236'; % - Good one
-imageID = '1114091636';   % Red car, green car
+%%  If you want the oiDay, this is how
 
-%% Day
 %{
 wgts = [0    0     0    100*0.5175]; % Day
 scene = hsSceneCreate(imageID,'weights',wgts,'denoise',false);
-% sceneWindow(scene,'render flag','clip');
 oiDay = oiCompute(oi, scene,'aperture',aperture,'crop',true,'pixel size',3e-6);
 oiWindow(oiDay,'gamma',0.5,'render flag','rgb');
-% srgb = oiGet(oiDay,'rgb'); ieNewGraphWin; image(srgb); truesize
-
-%% First a standard RGB
-
-sensorRGB = sensorCreate('ar0132at');
-sensorRGB = sensorSet(sensorRGB,'match oi',oiDay);
-sensorRGB = sensorSet(sensorRGB,'exp time',2e-3);
-sensorRGB = sensorCompute(sensorRGB,oiDay);
-sensorWindow(sensorRGB,'gamma',0.5);
-rgb = sensorGet(sensorRGB,'rgb');
-ieNewGraphWin; imagesc(rgb); truesize;
+srgb = oiGet(oiDay,'rgb'); ieNewGraphWin; image(srgb); truesize
 %}
-%% Night
+
+%% Night scene weights
+
+% For final, remember to turn off denoise
 
 % Experimenting with how dark.  4 log units down gets night
 % But three really doesn't.
 wgts    = [0.2306    0.0012    0.0001    1e-2*0.5175]; % Night
-scene   = hsSceneCreate(imageID,'weights',wgts,'denoise',false);
+scene   = hsSceneCreate(imageID,'weights',wgts,'denoise',true);
 oiNight = oiCompute(oi, scene,'aperture',aperture,'crop',true,'pixel size',3e-6);
 oiWindow(oiNight,'render flag','rgb','gamma',0.2);
+
+% save(sprintf('oiNight-%d',imageID),'oiNight');
+
+%% Standard automotive rgb
+
+% To speed things up
+% load(sprintf('oiNight-%d',imageID),'oiNight');
 
 %% Split pixel parameters
 

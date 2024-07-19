@@ -46,7 +46,7 @@ params.linewidth = 2;
 %}
 
 aperture = wvfAperture(wvf,params);
-oi = oiSet(oi,'wvf zcoeffs',0,'defocus');
+oi = oiSet(oi,'wvf zcoeffs',0.1,'defocus');   % Slight defocus.  Not sure why.
 
 %%  If you want the oiDay, this is how
 
@@ -69,7 +69,16 @@ scene   = hsSceneCreate(imageID,'weights',wgts,'denoise',true);
 oiNight = oiCompute(oi, scene,'aperture',aperture,'crop',true,'pixel size',3e-6);
 oiWindow(oiNight,'render flag','rgb','gamma',0.2);
 
+oiName = fullfile(isethdrsensorRootPath,'local',sprintf('oiNight-%s.mat',imageID));
+save(oiName,'oiNight','-v7.3');
+
 %% Standard automotive rgb
+
+% To speed things up
+%{
+ oiName = fullfile(isethdrsensorRootPath,'local',sprintf('oiNight-%s.mat',imageID));
+ load(oiName,'oiNight');
+%}
 
 sensorRGB = sensorCreate('ar0132at',[],'rgb');
 sensorRGB = sensorSet(sensorRGB,'match oi',oiNight);
@@ -87,12 +96,13 @@ imwrite(rgb,fullfile(isethdrsensorRootPath,'local',imName));
 
 % For this scene ID:  1114091636
 whichLine = 859;   
+
 % whichLine = 142; % An interesting one, also
 
 sensorRGB2 = sensorSet(sensorRGB,'noise flag',-1);
 sensorRGB2 = sensorSet(sensorRGB2,'name','no noise');
 sensorRGB2 = sensorCompute(sensorRGB2,oiNight);
-sensorWindow(sensorRGB2,'gamma',0.3);
+% sensorWindow(sensorRGB2,'gamma',0.3);
 
 % sensorPlot(sensorRGB2,'volts hline',[1 whichLine], 'two lines',true);
 % sensorPlot(sensorRGB,'volts hline',[1 whichLine], 'two lines',true);
@@ -104,13 +114,14 @@ y = uDataRGB2.data{channel};
 s  = mean(x,'all','omitnan');
 s2 = mean(y,'all','omitnan');
 peak = 0.98/max(x);
+
 ieNewGraphWin; 
 plot(uDataRGB.pos{1},(peak*x),'r-', ...
     uDataRGB2.pos{1},(peak*y)*(s/s2),'k-','LineWidth',2);
 grid on;
 xlabel('Position (um)')
 ylabel('Relative volts');
-title('RGB pixel');
+title('1-capture (ar0132at)');
 tmp = sprintf('rgb-%d-noise.pdf',whichLine);
 exportgraphics(gcf,fullfile(isethdrsensorRootPath,'local',tmp));
 
@@ -125,13 +136,16 @@ fprintf('RGB R_squared" %f\n',stats(1));
 pixelSize = sensorGet(sensorRGB,'pixel size');
 sensorSize = sensorGet(sensorRGB,'size');
 
+arrayType = 'imx490';
+
 % IMX490 or OVT
 % I ran both.  The IMX490 does well.  The OVT design, not as well.  I think
 % that is interesting.  3-capture vs. 4-capture.  The additional HCG in the
 % small pixel picks up the dark region!
-sensorArray = sensorCreateArray('array type','imx490',...
+sensorArray = sensorCreateArray('array type',arrayType,...
     'pixel size same fill factor',pixelSize,...
     'exp time',16e-3, ...
+    'quantizationmethod','analog', ...
     'size',sensorSize);
 
 sensorSplit = sensorComputeArray(sensorArray,oiNight);
@@ -146,10 +160,11 @@ imwrite(rgb,fullfile(isethdrsensorRootPath,'local',imName));
 
 %% Turn off the noise and compare
 
-sensorArray = sensorCreateArray('array type','ovt',...
+sensorArray = sensorCreateArray('array type',arrayType,...
     'pixel size same fill factor',pixelSize,...
     'exp time',16e-3, ...
     'size',sensorSize, ...
+    'quantizationmethod','analog', ...
     'noise flag',-1);
 [sensorSplit2, sensorArray] = sensorComputeArray(sensorArray,oiNight);
 
@@ -169,13 +184,14 @@ y = uDataRGB2.data{channel};
 s  = mean(x,'all','omitnan');
 s2 = mean(y,'all','omitnan');
 peak = 0.98/max(x);
+
 ieNewGraphWin; 
 plot(uDataRGB.pos{1},(peak*x),'r-', ...
     uDataRGB2.pos{1},(peak*y)*(s/s2),'k-','LineWidth',2);
 grid on;
 xlabel('Position (um)')
 ylabel('Relative volts');
-title('Split pixel');
+title('3-capture (OVT)');
 tmp = sprintf('split-%d-noise.pdf',whichLine);
 exportgraphics(gcf,fullfile(isethdrsensorRootPath,'local',tmp));
 
@@ -189,11 +205,28 @@ fprintf('Split R_squared" %f\n',stats(1));
 
 %% image process?
 
-ip = ipCreate;
-ip = ipCompute(ip,sensorSplit);
-ipWindow(ip,'render flag','rgb','gamma',0.25);
+ipRGB = ipCreate;
+ipRGB = ipCompute(ipRGB,sensorRGB);
+ipWindow(ipRGB,'render flag','rgb','gamma',0.25,'render flag','gray');
+rgb = ipGet(ipRGB,'srgb');
+fname = fullfile(isethdrsensorRootPath,'local','ip-rgb.png');
+imwrite(rgb,fname);
 
-ip = ipCompute(ip,sensorRGB);
-ipWindow(ip,'render flag','rgb','gamma',0.25);
+ipSplit = ipCreate;
+ipSplit = ipCompute(ipSplit,sensorSplit,'hdr white',true);
+ipWindow(ipSplit,'render flag','rgb','gamma',0.25,'render flag','gray');
+rgb = ipGet(ipSplit,'srgb');
+fname = fullfile(isethdrsensorRootPath,'local','ip-split.png');
+imwrite(rgb,fname);
+
+%% Show the narrowing around the lights
+uSplit = ipPlot(ipSplit,'horizontal line luminance',[1 626],'no figure');
+uRGB = ipPlot(ipRGB,'horizontal line luminance',[1 626],'no figure');
+
+ieNewGraphWin([],'wide');
+plot(uSplit.pos,ieScale(uSplit.data,1),'k-',uRGB.pos,ieScale(uRGB.data,1),'ko:','LineWidth',2);
+legend({'split','rgb'});
+grid on;
+set(gca,'xlim',[150 500])
 
 %%
