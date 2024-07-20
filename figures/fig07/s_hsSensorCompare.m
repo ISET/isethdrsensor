@@ -67,6 +67,8 @@ save(oiName,'oiDay','-v7.3');
 
 % Experimenting with how dark.  4 log units down gets night
 % But three really doesn't.
+
+%{
 wgts    = [0.2306    0.0012    0.0001    1e-2*0.5175]; % Night
 scene   = hsSceneCreate(imageID,'weights',wgts,'denoise',true);
 oiNight = oiCompute(oi, scene,'aperture',aperture,'crop',true,'pixel size',3e-6);
@@ -74,11 +76,12 @@ oiWindow(oiNight,'render flag','rgb','gamma',0.2);
 
 oiName = fullfile(isethdrsensorRootPath,'local',sprintf('oiNight-%s.mat',imageID));
 save(oiName,'oiNight','-v7.3');
+%}
 
 %% Standard automotive rgb
 
 % To speed things up
-%{
+% {
  oiName = fullfile(isethdrsensorRootPath,'local',sprintf('oiNight-%s.mat',imageID));
  load(oiName,'oiNight');
  oiInput = oiNight;
