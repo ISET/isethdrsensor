@@ -52,10 +52,13 @@ oi = oiSet(oi,'wvf zcoeffs',0.1,'defocus');   % Slight defocus.  Not sure why.
 
 %{
 wgts = [0    0     0    100*0.5175]; % Day
-scene = hsSceneCreate(imageID,'weights',wgts,'denoise',false);
+scene = hsSceneCreate(imageID,'weights',wgts,'denoise',true);
 oiDay = oiCompute(oi, scene,'aperture',aperture,'crop',true,'pixel size',3e-6);
 oiWindow(oiDay,'gamma',0.5,'render flag','rgb');
-srgb = oiGet(oiDay,'rgb'); ieNewGraphWin; image(srgb); truesize
+
+oiName = fullfile(isethdrsensorRootPath,'local',sprintf('oiDay-%s.mat',imageID));
+save(oiName,'oiDay','-v7.3');
+
 %}
 
 %% Night scene weights
@@ -78,19 +81,30 @@ save(oiName,'oiNight','-v7.3');
 %{
  oiName = fullfile(isethdrsensorRootPath,'local',sprintf('oiNight-%s.mat',imageID));
  load(oiName,'oiNight');
+ oiInput = oiNight;
+%}
+%{
+ oiName = fullfile(isethdrsensorRootPath,'local',sprintf('oiDay-%s.mat',imageID));
+ load(oiName,'oiDay');
+ oiInput = oiDay;
 %}
 
+expTime = 16e-3;
 sensorRGB = sensorCreate('ar0132at',[],'rgb');
-sensorRGB = sensorSet(sensorRGB,'match oi',oiNight);
-sensorRGB = sensorSet(sensorRGB,'exp time',16e-3);
+sensorRGB = sensorSet(sensorRGB,'match oi',oiInput);
+sensorRGB = sensorSet(sensorRGB,'exp time',expTime);
 sensorRGB = sensorSet(sensorRGB,'noise flag',2);
-sensorRGB = sensorCompute(sensorRGB,oiNight);
+sensorRGB = sensorCompute(sensorRGB,oiInput);
 sensorWindow(sensorRGB,'gamma',0.3);
 
 rgb = sensorGet(sensorRGB,'rgb');
-ieNewGraphWin; imagesc(rgb); truesize;
-imName = sprintf('rgbSensor.png');
+imName = sprintf('ar0132atSensor.png');
 imwrite(rgb,fullfile(isethdrsensorRootPath,'local',imName));
+
+%{ 
+sensorShowImage(sensorRGB,sensorGet(sensorRGB,'gamma'),true,ieNewGraphWin);
+truesize
+%}
 
 %% Turn off the noise and recompute
 
@@ -101,7 +115,7 @@ whichLine = 859;
 
 sensorRGB2 = sensorSet(sensorRGB,'noise flag',-1);
 sensorRGB2 = sensorSet(sensorRGB2,'name','no noise');
-sensorRGB2 = sensorCompute(sensorRGB2,oiNight);
+sensorRGB2 = sensorCompute(sensorRGB2,oiInput);
 % sensorWindow(sensorRGB2,'gamma',0.3);
 
 % sensorPlot(sensorRGB2,'volts hline',[1 whichLine], 'two lines',true);
@@ -136,7 +150,7 @@ fprintf('RGB R_squared" %f\n',stats(1));
 pixelSize = sensorGet(sensorRGB,'pixel size');
 sensorSize = sensorGet(sensorRGB,'size');
 
-arrayType = 'imx490';
+arrayType = 'ovt'; % imx490 ovt
 
 % IMX490 or OVT
 % I ran both.  The IMX490 does well.  The OVT design, not as well.  I think
@@ -144,17 +158,20 @@ arrayType = 'imx490';
 % small pixel picks up the dark region!
 sensorArray = sensorCreateArray('array type',arrayType,...
     'pixel size same fill factor',pixelSize,...
-    'exp time',16e-3, ...
+    'exp time',expTime, ...
     'quantizationmethod','analog', ...
     'size',sensorSize);
 
-sensorSplit = sensorComputeArray(sensorArray,oiNight);
+[sensorSplit,sensorArraySplit] = sensorComputeArray(sensorArray,oiInput,'method','best snr');
 sensorWindow(sensorSplit,'gamma',0.3);
 
 % We probably need to reset gamma to 1 before these sensorGet calls
 rgb = sensorGet(sensorSplit,'rgb');
 
-% ieNewGraphWin; imagesc(rgb); truesize;
+%{ 
+sensorShowImage(sensorSplit,sensorGet(sensorSplit,'gamma'),true,ieNewGraphWin);
+truesize
+%}
 imName = sprintf('splitSensor.png');
 imwrite(rgb,fullfile(isethdrsensorRootPath,'local',imName));
 
@@ -162,11 +179,11 @@ imwrite(rgb,fullfile(isethdrsensorRootPath,'local',imName));
 
 sensorArray = sensorCreateArray('array type',arrayType,...
     'pixel size same fill factor',pixelSize,...
-    'exp time',16e-3, ...
+    'exp time',expTime, ...
     'size',sensorSize, ...
     'quantizationmethod','analog', ...
     'noise flag',-1);
-[sensorSplit2, sensorArray] = sensorComputeArray(sensorArray,oiNight);
+[sensorSplit2, sensorArraySplit2] = sensorComputeArray(sensorArray,oiInput,'method','best snr');
 
 % sensorPlot(sensorSplit2,'volts hline',[1 whichLine], 'two lines',true);
 % sensorPlot(sensorSplit,'volts hline',[1 whichLine], 'two lines',true);
@@ -202,24 +219,28 @@ fprintf('Split R_squared" %f\n',stats(1));
 % slope = b(2)
 % intercept = b(1)
 
-
 %% image process?
 
 ipRGB = ipCreate;
 ipRGB = ipCompute(ipRGB,sensorRGB);
-ipWindow(ipRGB,'render flag','rgb','gamma',0.25,'render flag','gray');
+ipWindow(ipRGB,'render flag','rgb','gamma',0.25);
 rgb = ipGet(ipRGB,'srgb');
-fname = fullfile(isethdrsensorRootPath,'local','ip-rgb.png');
+fname = fullfile(isethdrsensorRootPath,'local','ip-ar0132at.png');
 imwrite(rgb,fname);
 
 ipSplit = ipCreate;
 ipSplit = ipCompute(ipSplit,sensorSplit,'hdr white',true);
-ipWindow(ipSplit,'render flag','rgb','gamma',0.25,'render flag','gray');
+ipWindow(ipSplit,'render flag','rgb','gamma',0.25);
 rgb = ipGet(ipSplit,'srgb');
 fname = fullfile(isethdrsensorRootPath,'local','ip-split.png');
 imwrite(rgb,fname);
 
 %% Show the narrowing around the lights
+
+% 626 row is bottom two lights  150 - 600
+% 586 row is next lights up 250 900
+% 551 row the distant cars - 1000 1200
+% 296 row one of the upper lights  - 600 800
 uSplit = ipPlot(ipSplit,'horizontal line luminance',[1 626],'no figure');
 uRGB = ipPlot(ipRGB,'horizontal line luminance',[1 626],'no figure');
 
@@ -227,6 +248,25 @@ ieNewGraphWin([],'wide');
 plot(uSplit.pos,ieScale(uSplit.data,1),'k-',uRGB.pos,ieScale(uRGB.data,1),'ko:','LineWidth',2);
 legend({'split','rgb'});
 grid on;
-set(gca,'xlim',[150 500])
+set(gca,'xlim',[150 600])
+xlabel('Column'); ylabel('Relative luminance');
+tmp = sprintf('split-ar0132at-luminance.pdf');
+exportgraphics(gcf,fullfile(isethdrsensorRootPath,'local',tmp));
+
+%%  Look at the individual captures
+
+gam = 0.3; scaleMax = 1;
+for ii=1:numel(sensorArraySplit)
+    img = sensorShowImage(sensorArraySplit(ii),gam,scaleMax,0);
+    tmp = sprintf('%s.png',sensorGet(sensorArraySplit(ii),'name'));
+    imwrite(img,fullfile(isethdrsensorRootPath,'local',tmp));
+    % sensorWindow(sensorArraySplit(ii));
+end
+
+img = sensorShowImage(sensorSplit,gam,scaleMax,0);
+tmp = sprintf('%s.png',sensorGet(sensorSplit,'name'));
+imwrite(img,fullfile(isethdrsensorRootPath,'local',tmp));
 
 %%
+
+ieNewGraphWin; imagesc(sensorSplit.metadata.npixels)
