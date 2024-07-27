@@ -22,7 +22,7 @@
 ieInit;
 
 % imageID = '1112201236'; % - Good one
-imageID = '1114091636';   % Red car, green car
+imageID = '1114091636';   % Red car, green car.  Used in paper.
 
 %% Day scene weights
 
@@ -92,7 +92,8 @@ save(oiName,'oiNight','-v7.3');
  oiInput = oiDay;
 %}
 
-expTime = 16e-3;
+%%
+expTime = 4*16e-3;   % 16e-3 is 60 hz.
 sensorRGB = sensorCreate('ar0132at',[],'rgb');
 sensorRGB = sensorSet(sensorRGB,'match oi',oiInput);
 sensorRGB = sensorSet(sensorRGB,'exp time',expTime);
@@ -148,7 +149,6 @@ X = [ones(length(x), 1), x];  % Add a column of ones for the intercept
 fprintf('RGB R_squared" %f\n',stats(1));
 
 %% Split pixel , night time.  Default parameters.
-% See s_hsSplitPixelParameters
 
 pixelSize = sensorGet(sensorRGB,'pixel size');
 sensorSize = sensorGet(sensorRGB,'size');
@@ -165,7 +165,7 @@ sensorArray = sensorCreateArray('array type',arrayType,...
     'quantizationmethod','analog', ...
     'size',sensorSize);
 
-[sensorSplit,sensorArraySplit] = sensorComputeArray(sensorArray,oiInput,'method','best snr');
+[sensorSplit,sensorArraySplit] = sensorComputeArray(sensorArray,oiInput,'method','saturated');
 sensorWindow(sensorSplit,'gamma',0.3);
 
 % We probably need to reset gamma to 1 before these sensorGet calls
@@ -185,8 +185,8 @@ sensorArray = sensorCreateArray('array type',arrayType,...
     'exp time',expTime, ...
     'size',sensorSize, ...
     'quantizationmethod','analog', ...
-    'noise flag',-1);
-[sensorSplit2, sensorArraySplit2] = sensorComputeArray(sensorArray,oiInput,'method','best snr');
+    'noise flag',0);
+[sensorSplit2, sensorArraySplit2] = sensorComputeArray(sensorArray,oiInput,'method','saturated');
 
 % sensorPlot(sensorSplit2,'volts hline',[1 whichLine], 'two lines',true);
 % sensorPlot(sensorSplit,'volts hline',[1 whichLine], 'two lines',true);
@@ -263,7 +263,7 @@ for ii=1:numel(sensorArraySplit)
     img = sensorShowImage(sensorArraySplit(ii),gam,scaleMax,0);
     tmp = sprintf('%s.png',sensorGet(sensorArraySplit(ii),'name'));
     imwrite(img,fullfile(isethdrsensorRootPath,'local',tmp));
-    % sensorWindow(sensorArraySplit(ii));
+    sensorWindow(sensorArraySplit(ii));
 end
 
 img = sensorShowImage(sensorSplit,gam,scaleMax,0);
@@ -272,4 +272,7 @@ imwrite(img,fullfile(isethdrsensorRootPath,'local',tmp));
 
 %%
 
-ieNewGraphWin; imagesc(sensorSplit.metadata.npixels)
+ieNewGraphWin; imagesc(sensorSplit.metadata.bestPixel);
+colormap([1,0,0; 0,1,0; 0,0,1]);
+
+histogram(sensorSplit.metadata.bestPixel(:));

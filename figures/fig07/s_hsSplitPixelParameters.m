@@ -1,5 +1,8 @@
 %% Make a figure comparing the different types of sensors
 %
+% Not started yet.  Will shift the split pixel parameters around to
+% see which relative gain is best.
+%
 % For a couple of scenes, render them through some kind of optics onto the
 %
 % Here are the scenes.  Refresh from time to time.
