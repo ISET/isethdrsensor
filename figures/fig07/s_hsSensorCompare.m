@@ -93,7 +93,7 @@ save(oiName,'oiNight','-v7.3');
 %}
 
 %%
-expTime = 4*16e-3;   % 16e-3 is 60 hz.
+expTime = 16e-3;   % 16e-3 is 60 hz.
 sensorRGB = sensorCreate('ar0132at',[],'rgb');
 sensorRGB = sensorSet(sensorRGB,'match oi',oiInput);
 sensorRGB = sensorSet(sensorRGB,'exp time',expTime);
@@ -117,7 +117,7 @@ whichLine = 859;
 
 % whichLine = 142; % An interesting one, also
 
-sensorRGB2 = sensorSet(sensorRGB,'noise flag',-1);
+sensorRGB2 = sensorSet(sensorRGB,'noise flag',0);
 sensorRGB2 = sensorSet(sensorRGB2,'name','no noise');
 sensorRGB2 = sensorCompute(sensorRGB2,oiInput);
 % sensorWindow(sensorRGB2,'gamma',0.3);
@@ -271,8 +271,19 @@ tmp = sprintf('%s.png',sensorGet(sensorSplit,'name'));
 imwrite(img,fullfile(isethdrsensorRootPath,'local',tmp));
 
 %%
-
+%{
 ieNewGraphWin; imagesc(sensorSplit.metadata.bestPixel);
 colormap([1,0,0; 0,1,0; 0,0,1]);
 
 histogram(sensorSplit.metadata.bestPixel(:));
+%}
+%{
+saturated = sensorSplit.metadata.saturated;
+
+% Where is (a) 1 is saturated, and 
+%          (b) 1 is not saturated, but 2 is saturated
+ieNewGraphWin;
+tiledlayout(2,1);
+nexttile; imagesc(saturated(:,:,1));
+nexttile; imagesc(~saturated(:,:,1) .* saturated(:,:,2));
+%}
