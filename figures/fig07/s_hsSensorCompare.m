@@ -92,70 +92,18 @@ oi = oiSet(oi,'wvf zcoeffs',0.1,'defocus');
 
 % 16e-3 is 60 h frame rate.  Used for all the captures below.
 expTime = 16e-3;   
-
-% Here is the standard sensor
-sensorRGB = sensorCreate('ar0132at',[],'rgb');
-sensorRGB = sensorSet(sensorRGB,'match oi',oiInput);
-sensorRGB = sensorSet(sensorRGB,'exp time',expTime);
-sensorRGB = sensorSet(sensorRGB,'noise flag',2);
-sensorRGB = sensorCompute(sensorRGB,oiInput);
-
-sensorWindow(sensorRGB,'gamma',0.3);
-
-% Save out the RGB image
-rgb = sensorGet(sensorRGB,'rgb');
-imName = sprintf('ar0132atSensor.png');
-imwrite(rgb,fullfile(isethdrsensorRootPath,'local',imName));
-
-%{
-% Have a close look, if you want.
-sensorShowImage(sensorRGB,sensorGet(sensorRGB,'gamma'),true,ieNewGraphWin);
-truesize
-%}
-
-%% Turn off the noise, recompute, and show the noise.
-
-whichLine = 859;   
+whichLine = 859;
+satLevel = .99;
 % whichLine = 142; % An interesting one, also
 
-% No noise.
-sensorRGB2 = sensorSet(sensorRGB,'noise flag',0);
-sensorRGB2 = sensorSet(sensorRGB2,'name','no noise');
-sensorRGB2 = sensorCompute(sensorRGB2,oiInput);
-% sensorWindow(sensorRGB2,'gamma',0.3);
+%% Simulate the Omnivision (OVT) Split pixel technology.
 
-uDataRGB  = sensorPlot(sensorRGB,'volts hline',[1 whichLine],'no fig',true);
-uDataRGB2 = sensorPlot(sensorRGB2,'volts hline',[1 whichLine],'no fig',true);
+% pixelSize = sensorGet(sensorRGB,'pixel size');
+% sensorSize = sensorGet(sensorRGB,'size');
 
-% The red channel
-channel = 1;
-x = uDataRGB.data{channel};
-y = uDataRGB2.data{channel};
-s  = mean(x,'all','omitnan');
-s2 = mean(y,'all','omitnan');
-peak = 0.98/max(x);
+pixelSize = [3 3]*1e-6;
+sensorSize = [1082 1926];
 
-ieNewGraphWin; 
-plot(uDataRGB.pos{1},(peak*x),'r-', ...
-    uDataRGB2.pos{1},(peak*y)*(s/s2),'k-','LineWidth',2);
-grid on;
-xlabel('Position (um)')
-ylabel('Relative volts');
-title('1-capture (ar0132at)');
-tmp = sprintf('rgb-%d-noise.pdf',whichLine);
-exportgraphics(gcf,fullfile(isethdrsensorRootPath,'local',tmp));
-
-%% Calculate how closely the measurements track the no noise values
-
-% Assuming x and y are your data vectors
-X = [ones(length(x), 1), x];  % Add a column of ones for the intercept
-[b,~,~,~,stats] = regress(y, X);
-fprintf('RGB R_squared" %f\n',stats(1));
-
-%% Now the Omnivision (OVT) Split pixel technology.
-
-pixelSize = sensorGet(sensorRGB,'pixel size');
-sensorSize = sensorGet(sensorRGB,'size');
 arrayType = 'ovt'; 
 
 % The OVT design is a 3-capture (two large PD captures and one small PD).
@@ -198,9 +146,11 @@ X = [ones(length(x), 1), x];  % Add a column of ones for the intercept
 [b,~,~,~,stats] = regress(y, X);
 fprintf('LPD-HCG R_squared" %f\n',stats(1));
 
-%% Now the full 3-capture
+%% The full 3-capture
 
-[sensorSplit,sensorArraySplit] = sensorComputeArray(sensorArray,oiInput,'method','saturated');
+[sensorSplit,sensorArraySplit] = sensorComputeArray(sensorArray,oiInput,...
+    'method','saturated', ...
+    'saturated',satLevel);
 sensorWindow(sensorSplit,'gamma',0.3);
 
 % We probably need to reset gamma to 1 before these sensorGet calls
@@ -222,7 +172,10 @@ sensorArray = sensorCreateArray('array type',arrayType,...
     'size',sensorSize, ...
     'quantizationmethod','analog', ...
     'noise flag',0);
-[sensorSplit2, sensorArraySplit2] = sensorComputeArray(sensorArray,oiInput,'method','saturated');
+
+[sensorSplit2, sensorArraySplit2] = sensorComputeArray(sensorArray,oiInput,...
+    'method','saturated', ...
+    'saturated',satLevel);
 
 uDataRGB = sensorPlot(sensorSplit,'volts hline',[1 whichLine],'no fig',true);
 uDataRGB2 = sensorPlot(sensorSplit2,'volts hline',[1 whichLine],'no fig',true);
@@ -239,7 +192,7 @@ s  = mean(x,'all','omitnan');
 s2 = mean(y,'all','omitnan');
 peak = 0.98/max(x);
 
-ieNewGraphWin; 
+ieNewGraphWin;
 plot(uDataRGB.pos{1},(peak*x),'r-', ...
     uDataRGB2.pos{1},(peak*y)*(s/s2),'k-','LineWidth',2);
 grid on;
@@ -254,17 +207,11 @@ X = [ones(length(x), 1), x];  % Add a column of ones for the intercept
 [b,~,~,~,stats] = regress(y, X);
 fprintf('Split R_squared" %f\n',stats(1));
 
+
 % slope = b(2)
 % intercept = b(1)
 
 %% Image process the RGB and split pixel
-
-ipRGB = ipCreate;
-ipRGB = ipCompute(ipRGB,sensorRGB);
-ipWindow(ipRGB,'render flag','rgb','gamma',0.25);
-rgb = ipGet(ipRGB,'srgb');
-fname = fullfile(isethdrsensorRootPath,'local','ip-ar0132at.png');
-imwrite(rgb,fname);
 
 ipSplit = ipCreate;
 ipSplit = ipCompute(ipSplit,sensorSplit,'hdr white',true);
@@ -273,11 +220,11 @@ rgb = ipGet(ipSplit,'srgb');
 fname = fullfile(isethdrsensorRootPath,'local','ip-split.png');
 imwrite(rgb,fname);
 
-ipSplit2 = ipCreate;
-ipSplit2 = ipCompute(ipSplit2,sensorSplit2,'hdr white',true);
-ipWindow(ipSplit2,'render flag','rgb','gamma',0.25);
-rgb = ipGet(ipSplit2,'srgb');
-fname = fullfile(isethdrsensorRootPath,'local','ip-split-nonoise.png');
+ipLPD = ipCreate;
+ipLPD = ipCompute(ipLPD,sensorLPD,'hdr white',true);
+ipWindow(ipLPD,'render flag','rgb','gamma',0.25);
+rgb = ipGet(ipLPD,'srgb');
+fname = fullfile(isethdrsensorRootPath,'local','ip-LPD.png');
 imwrite(rgb,fname);
 
 %% Show the improved spatial representation near the headlights
@@ -287,20 +234,21 @@ imwrite(rgb,fname);
 % 551 row the distant cars - 1000 1200
 % 296 row one of the upper lights  - 600 800
 uSplit = ipPlot(ipSplit,'horizontal line luminance',[1 626],'no figure');
-uRGB   = ipPlot(ipRGB,'horizontal line luminance',[1 626],'no figure');
+uLPD   = ipPlot(ipLPD,'horizontal line luminance',[1 626],'no figure');
 
 ieNewGraphWin([],'wide');
 plot(uSplit.pos,ieScale(uSplit.data,1),'k-',...
-    uRGB.pos,ieScale(uRGB.data,1),'ko:','LineWidth',2);
-legend({'split','rgb'});
+    uLPD.pos,ieScale(uLPD.data,1),'ko:','LineWidth',2);
+legend({'split','LPD'});
 grid on; set(gca,'xlim',[150 600]); 
 xlabel('Column'); ylabel('Relative luminance');
 
-tmp = sprintf('split-ar0132at-luminance.pdf');
+tmp = sprintf('split-LPD-luminance.pdf');
 exportgraphics(gcf,fullfile(isethdrsensorRootPath,'local',tmp));
 
 %%  Look at the individual captures
 
+%{
 gam = 0.3; scaleMax = 1;
 for ii=1:numel(sensorArraySplit)
     img = sensorShowImage(sensorArraySplit(ii),gam,scaleMax,0);
@@ -312,6 +260,7 @@ end
 img = sensorShowImage(sensorSplit,gam,scaleMax,0);
 tmp = sprintf('%s.png',sensorGet(sensorSplit,'name'));
 imwrite(img,fullfile(isethdrsensorRootPath,'local',tmp));
+%}
 
 %% Some potential graphs
 
@@ -335,14 +284,73 @@ nexttile; imagesc(saturated(:,:,2)); axis image
 subtitle('Image 2 saturated'); axis image
 drawnow;
 
-%% Try rendering just the one LPD from the array
-
-% This looks good.  The only reason pixels are different in the final image
-% is because of the saturated values at the headlights and we average two
-% captures for in the places where the LPD-HCG are not saturated.
-sensorLPD = sensorArraySplit(1);
-ipLPD = ipCreate;
-ipLPD = ipCompute(ipLPD,sensorLPD);
-ipWindow(ipLPD);
-
 %% END
+
+%{
+%% Here is a standard sensor ON Semi
+
+sensorRGB = sensorCreate('ar0132at',[],'rgb');
+sensorRGB = sensorSet(sensorRGB,'match oi',oiInput);
+sensorRGB = sensorSet(sensorRGB,'exp time',expTime);
+sensorRGB = sensorSet(sensorRGB,'noise flag',2);
+sensorRGB = sensorCompute(sensorRGB,oiInput);
+
+sensorWindow(sensorRGB,'gamma',0.3);
+
+% Save out the RGB image
+rgb = sensorGet(sensorRGB,'rgb');
+imName = sprintf('ar0132atSensor.png');
+imwrite(rgb,fullfile(isethdrsensorRootPath,'local',imName));
+
+%{
+% Have a close look, if you want.
+sensorShowImage(sensorRGB,sensorGet(sensorRGB,'gamma'),true,ieNewGraphWin);
+truesize
+%}
+
+%% Turn off the noise, recompute, and show the noise.
+
+
+% No noise.
+sensorRGB2 = sensorSet(sensorRGB,'noise flag',0);
+sensorRGB2 = sensorSet(sensorRGB2,'name','no noise');
+sensorRGB2 = sensorCompute(sensorRGB2,oiInput);
+% sensorWindow(sensorRGB2,'gamma',0.3);
+
+uDataRGB  = sensorPlot(sensorRGB,'volts hline',[1 whichLine],'no fig',true);
+uDataRGB2 = sensorPlot(sensorRGB2,'volts hline',[1 whichLine],'no fig',true);
+
+% The red channel
+channel = 1;
+x = uDataRGB.data{channel};
+y = uDataRGB2.data{channel};
+s  = mean(x,'all','omitnan');
+s2 = mean(y,'all','omitnan');
+peak = 0.98/max(x);
+
+ieNewGraphWin; 
+plot(uDataRGB.pos{1},(peak*x),'r-', ...
+    uDataRGB2.pos{1},(peak*y)*(s/s2),'k-','LineWidth',2);
+grid on;
+xlabel('Position (um)')
+ylabel('Relative volts');
+title('1-capture (ar0132at)');
+tmp = sprintf('rgb-%d-noise.pdf',whichLine);
+exportgraphics(gcf,fullfile(isethdrsensorRootPath,'local',tmp));
+
+%% Calculate how closely the measurements track the no noise values
+
+% Assuming x and y are your data vectors
+X = [ones(length(x), 1), x];  % Add a column of ones for the intercept
+[b,~,~,~,stats] = regress(y, X);
+fprintf('RGB R_squared" %f\n',stats(1));
+%}
+
+%{
+ipRGB = ipCreate;
+ipRGB = ipCompute(ipRGB,sensorRGB);
+ipWindow(ipRGB,'render flag','rgb','gamma',0.25);
+rgb = ipGet(ipRGB,'srgb');
+fname = fullfile(isethdrsensorRootPath,'local','ip-ar0132at.png');
+imwrite(rgb,fname);
+%}
