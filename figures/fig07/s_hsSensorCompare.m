@@ -4,6 +4,9 @@
 % automotive RGB sensor and a similar sensor, but with the split pixel
 % design, as proposed by Omnivision.
 %
+% For the split pixel, we compare the pure LPD-LCG rendering with the
+% rendering we get when we use the LPD-HCG and SPD-LCG.
+%
 % We write out the sensor images, and we also compare the noise along
 % a couple of lines by plotting the response and plotting the
 % simulation noise free.
@@ -13,15 +16,15 @@
 % better.
 %
 % The parallel script s_hsSplitPixelParameters does an analysis with
-% the split pixel and varying parameters.
+% the split pixel but varying parameters.
 %
 % See also
 %   s_hsSplitPixelParameters
 
 %% Notes on Scene Creation
 %
-% At this time, people need to get oiNight manually for this to work. We
-% will find a way to put it in an open, downloadable, site.
+% At this time, users need to get oiNight manually from us. We will find a
+% way to put it in an open, downloadable, site.
 %
 
 %%  This is how we created oiDay
@@ -35,7 +38,6 @@ oiWindow(oiDay,'gamma',0.5,'render flag','rgb');
 
 oiName = fullfile(isethdrsensorRootPath,'local',sprintf('oiDay-%s.mat',imageID));
 save(oiName,'oiDay','-v7.3');
-
 %}
 
 %% This is how we created oiNight
@@ -163,6 +165,41 @@ sensorArray = sensorCreateArray('array type',arrayType,...
     'quantizationmethod','analog', ...
     'size',sensorSize);
 
+%% Use just the LPD-LCG sensor
+sensorLPD = sensorArray(1);
+sensorLPD = sensorCompute(sensorLPD,oiInput);
+sensorWindow(sensorLPD);
+uDataRGB  = sensorPlot(sensorLPD,'volts hline',[1 whichLine],'no fig',true);
+
+sensorLPD2 = sensorSet(sensorLPD,'noise flag',0);
+sensorLPD2 = sensorCompute(sensorLPD2,oiInput);
+uDataRGB2 = sensorPlot(sensorLPD2,'volts hline',[1 whichLine],'no fig',true);
+
+% The red channel
+channel = 1;
+x = uDataRGB.data{channel};
+y = uDataRGB2.data{channel};
+s  = mean(x,'all','omitnan');
+s2 = mean(y,'all','omitnan');
+peak = 0.98/max(x);
+
+ieNewGraphWin; 
+plot(uDataRGB.pos{1},(peak*x),'r-', ...
+    uDataRGB2.pos{1},(peak*y)*(s/s2),'k-','LineWidth',2);
+grid on;
+xlabel('Position (um)')
+ylabel('Relative volts');
+title('1-capture (LPD-LCG)');
+tmp = sprintf('rgb-%d-noise.pdf',whichLine);
+exportgraphics(gcf,fullfile(isethdrsensorRootPath,'local',tmp));
+
+% Assuming x and y are your data vectors
+X = [ones(length(x), 1), x];  % Add a column of ones for the intercept
+[b,~,~,~,stats] = regress(y, X);
+fprintf('LPD-HCG R_squared" %f\n',stats(1));
+
+%% Now the full 3-capture
+
 [sensorSplit,sensorArraySplit] = sensorComputeArray(sensorArray,oiInput,'method','saturated');
 sensorWindow(sensorSplit,'gamma',0.3);
 
@@ -236,6 +273,13 @@ rgb = ipGet(ipSplit,'srgb');
 fname = fullfile(isethdrsensorRootPath,'local','ip-split.png');
 imwrite(rgb,fname);
 
+ipSplit2 = ipCreate;
+ipSplit2 = ipCompute(ipSplit2,sensorSplit2,'hdr white',true);
+ipWindow(ipSplit2,'render flag','rgb','gamma',0.25);
+rgb = ipGet(ipSplit2,'srgb');
+fname = fullfile(isethdrsensorRootPath,'local','ip-split-nonoise.png');
+imwrite(rgb,fname);
+
 %% Show the improved spatial representation near the headlights
 
 % 626 row is bottom two lights  150 - 600
@@ -277,13 +321,28 @@ imwrite(img,fullfile(isethdrsensorRootPath,'local',tmp));
 % the SPD data.
 saturated = sensorSplit.metadata.saturated;
 
-% Where is (a) 1 and 2 are saturated
-%          (b) 1 is not saturated, but 2 is saturated
-ieNewGraphWin;
-tiledlayout(2,1);
-nexttile; imagesc(saturated(:,:,1) .* saturated(:,:,2)); axis image;
-subtitle('Image 1 and 2 are saturated')
+% Two images
+%   (a) 1 is saturated
+%   (b) 1 is not saturated, 2 is saturated
+%   (c) 2 is saturated
+ieNewGraphWin([],'tall');
+tiledlayout(3,1);
+nexttile; imagesc(saturated(:,:,1)); axis image;
+subtitle('Image 1 saturated')
 nexttile; imagesc(~saturated(:,:,1) .* saturated(:,:,2)); axis image;
 subtitle('Image 2 saturated (but not 1)')
+nexttile; imagesc(saturated(:,:,2)); axis image
+subtitle('Image 2 saturated'); axis image
+drawnow;
+
+%% Try rendering just the one LPD from the array
+
+% This looks good.  The only reason pixels are different in the final image
+% is because of the saturated values at the headlights and we average two
+% captures for in the places where the LPD-HCG are not saturated.
+sensorLPD = sensorArraySplit(1);
+ipLPD = ipCreate;
+ipLPD = ipCompute(ipLPD,sensorLPD);
+ipWindow(ipLPD);
 
 %% END
