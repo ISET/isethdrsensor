@@ -5,7 +5,8 @@
 % otherwise the same.
 %
 % See also
-%   
+%   I think I made a GIF elsewhere that is more advanced than this.  Look
+%   for it!
 
 %%  These are all the scenes BW processed.
 % We need a different version of this, probably threw Andrew's database.

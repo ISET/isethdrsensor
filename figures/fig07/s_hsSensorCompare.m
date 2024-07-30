@@ -114,16 +114,26 @@ sensorArray = sensorCreateArray('array type',arrayType,...
     'size',sensorSize);
 
 %% Use just the LPD-LCG sensor
+
+% Base sensor
 sensorLPD = sensorArray(1);
 sensorLPD = sensorCompute(sensorLPD,oiInput);
 sensorWindow(sensorLPD);
 uDataRGB  = sensorPlot(sensorLPD,'volts hline',[1 whichLine],'no fig',true);
 
+% We probably need to reset gamma to 1 before these sensorGet calls
+rgb = sensorGet(sensorLPD,'rgb');
+
+imName = sprintf('sensorLPD.png');
+imwrite(rgb,fullfile(isethdrsensorRootPath,'local',imName));
+
+%% Without noise
+
 sensorLPD2 = sensorSet(sensorLPD,'noise flag',0);
 sensorLPD2 = sensorCompute(sensorLPD2,oiInput);
 uDataRGB2 = sensorPlot(sensorLPD2,'volts hline',[1 whichLine],'no fig',true);
 
-% The red channel
+% The red channel, compared
 channel = 1;
 x = uDataRGB.data{channel};
 y = uDataRGB2.data{channel};
@@ -138,7 +148,7 @@ grid on;
 xlabel('Position (um)')
 ylabel('Relative volts');
 title('1-capture (LPD-LCG)');
-tmp = sprintf('rgb-%d-noise.pdf',whichLine);
+tmp = sprintf('LPD-%d-noise.pdf',whichLine);
 exportgraphics(gcf,fullfile(isethdrsensorRootPath,'local',tmp));
 
 % Assuming x and y are your data vectors
@@ -177,6 +187,7 @@ sensorArray = sensorCreateArray('array type',arrayType,...
     'method','saturated', ...
     'saturated',satLevel);
 
+%%
 uDataRGB = sensorPlot(sensorSplit,'volts hline',[1 whichLine],'no fig',true);
 uDataRGB2 = sensorPlot(sensorSplit2,'volts hline',[1 whichLine],'no fig',true);
 
@@ -239,28 +250,12 @@ uLPD   = ipPlot(ipLPD,'horizontal line luminance',[1 626],'no figure');
 ieNewGraphWin([],'wide');
 plot(uSplit.pos,ieScale(uSplit.data,1),'k-',...
     uLPD.pos,ieScale(uLPD.data,1),'ko:','LineWidth',2);
-legend({'split','LPD'});
+legend({'3-capture OVT','LPD-LCG'});
 grid on; set(gca,'xlim',[150 600]); 
 xlabel('Column'); ylabel('Relative luminance');
 
 tmp = sprintf('split-LPD-luminance.pdf');
 exportgraphics(gcf,fullfile(isethdrsensorRootPath,'local',tmp));
-
-%%  Look at the individual captures
-
-%{
-gam = 0.3; scaleMax = 1;
-for ii=1:numel(sensorArraySplit)
-    img = sensorShowImage(sensorArraySplit(ii),gam,scaleMax,0);
-    tmp = sprintf('%s.png',sensorGet(sensorArraySplit(ii),'name'));
-    imwrite(img,fullfile(isethdrsensorRootPath,'local',tmp));
-    sensorWindow(sensorArraySplit(ii));
-end
-
-img = sensorShowImage(sensorSplit,gam,scaleMax,0);
-tmp = sprintf('%s.png',sensorGet(sensorSplit,'name'));
-imwrite(img,fullfile(isethdrsensorRootPath,'local',tmp));
-%}
 
 %% Some potential graphs
 
@@ -286,71 +281,3 @@ drawnow;
 
 %% END
 
-%{
-%% Here is a standard sensor ON Semi
-
-sensorRGB = sensorCreate('ar0132at',[],'rgb');
-sensorRGB = sensorSet(sensorRGB,'match oi',oiInput);
-sensorRGB = sensorSet(sensorRGB,'exp time',expTime);
-sensorRGB = sensorSet(sensorRGB,'noise flag',2);
-sensorRGB = sensorCompute(sensorRGB,oiInput);
-
-sensorWindow(sensorRGB,'gamma',0.3);
-
-% Save out the RGB image
-rgb = sensorGet(sensorRGB,'rgb');
-imName = sprintf('ar0132atSensor.png');
-imwrite(rgb,fullfile(isethdrsensorRootPath,'local',imName));
-
-%{
-% Have a close look, if you want.
-sensorShowImage(sensorRGB,sensorGet(sensorRGB,'gamma'),true,ieNewGraphWin);
-truesize
-%}
-
-%% Turn off the noise, recompute, and show the noise.
-
-
-% No noise.
-sensorRGB2 = sensorSet(sensorRGB,'noise flag',0);
-sensorRGB2 = sensorSet(sensorRGB2,'name','no noise');
-sensorRGB2 = sensorCompute(sensorRGB2,oiInput);
-% sensorWindow(sensorRGB2,'gamma',0.3);
-
-uDataRGB  = sensorPlot(sensorRGB,'volts hline',[1 whichLine],'no fig',true);
-uDataRGB2 = sensorPlot(sensorRGB2,'volts hline',[1 whichLine],'no fig',true);
-
-% The red channel
-channel = 1;
-x = uDataRGB.data{channel};
-y = uDataRGB2.data{channel};
-s  = mean(x,'all','omitnan');
-s2 = mean(y,'all','omitnan');
-peak = 0.98/max(x);
-
-ieNewGraphWin; 
-plot(uDataRGB.pos{1},(peak*x),'r-', ...
-    uDataRGB2.pos{1},(peak*y)*(s/s2),'k-','LineWidth',2);
-grid on;
-xlabel('Position (um)')
-ylabel('Relative volts');
-title('1-capture (ar0132at)');
-tmp = sprintf('rgb-%d-noise.pdf',whichLine);
-exportgraphics(gcf,fullfile(isethdrsensorRootPath,'local',tmp));
-
-%% Calculate how closely the measurements track the no noise values
-
-% Assuming x and y are your data vectors
-X = [ones(length(x), 1), x];  % Add a column of ones for the intercept
-[b,~,~,~,stats] = regress(y, X);
-fprintf('RGB R_squared" %f\n',stats(1));
-%}
-
-%{
-ipRGB = ipCreate;
-ipRGB = ipCompute(ipRGB,sensorRGB);
-ipWindow(ipRGB,'render flag','rgb','gamma',0.25);
-rgb = ipGet(ipRGB,'srgb');
-fname = fullfile(isethdrsensorRootPath,'local','ip-ar0132at.png');
-imwrite(rgb,fname);
-%}
