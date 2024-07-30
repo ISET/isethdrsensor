@@ -1,4 +1,4 @@
-%% Analyzing the OVT 3-capture sensor (Night)
+%% Analyzing the OVT 3-capture sensor (Day)
 %
 % We compare the rendering of a nighttime HDR scene with a standard
 % automotive RGB sensor and a similar sensor, but with the split pixel
@@ -63,9 +63,9 @@ imageID = '1114091636';   % Red car, green car.
 % An option for some other time.
 % imageID = '1112201236'; % - Good one
 
-oiName = fullfile(isethdrsensorRootPath,'local',sprintf('oiNight-%s.mat',imageID));
-load(oiName,'oiNight');
-oiInput = oiNight;
+oiName = fullfile(isethdrsensorRootPath,'local',sprintf('oiDay-%s.mat',imageID));
+load(oiName,'oiDay');
+oiInput = oiDay;
 
 %% Create the optics
 [oi,wvf] = oiCreate('wvf');
@@ -91,9 +91,11 @@ oi = oiSet(oi,'wvf zcoeffs',0.1,'defocus');
 %% Run a standard RGB sensor
 
 % 16e-3 is 60 h frame rate.  Used for all the captures below.
-expTime = 16e-3;   
+expTime = .2e-3;   
 whichLine = 859;
 satLevel = .99;
+pixelFillFactor = 0.1;
+
 % whichLine = 142; % An interesting one, also
 
 %% Simulate the Omnivision (OVT) Split pixel technology.
@@ -112,6 +114,7 @@ sensorArray = sensorCreateArray('array type',arrayType,...
     'exp time',expTime, ...
     'quantizationmethod','analog', ...
     'size',sensorSize);
+sensorArray(3) = sensorSet(sensorArray(3),'pixel fill factor',pixelFillFactor);
 
 %% Use just the LPD-LCG sensor
 
@@ -126,6 +129,13 @@ rgb = sensorGet(sensorLPD,'rgb');
 
 imName = sprintf('sensorLPD.png');
 imwrite(rgb,fullfile(isethdrsensorRootPath,'local',imName));
+
+%%
+
+% Small photodiode
+sensorSPD = sensorArray(3);
+sensorSPD = sensorCompute(sensorSPD,oiInput);
+sensorWindow(sensorSPD);
 
 %% Without noise
 
@@ -158,10 +168,20 @@ fprintf('LPD-HCG R_squared" %f\n',stats(1));
 
 %% The full 3-capture
 
+% sensorArray(3) = sensorSet(sensorArray(3),'pixel fill factor',1);
+
 [sensorSplit,sensorArraySplit] = sensorComputeArray(sensorArray,oiInput,...
     'method','saturated', ...
     'saturated',satLevel);
-sensorWindow(sensorSplit,'gamma',0.3);
+%{
+% Check that it is OK.
+ip = ipCreate; 
+ip = ipCompute(ip,sensorSplit,'hdr white',true); ipWindow(ip,'gamma',0.7);
+ip = ipCompute(ip,sensorArraySplit(1),'hdr white',true); ipWindow(ip,'gamma',0.7); 
+ip = ipCompute(ip,sensorArraySplit(3),'hdr white',true); ipWindow(ip,'gamma',0.7); 
+%}
+
+sensorWindow(sensorSplit,'gamma',0.7);
 
 % We probably need to reset gamma to 1 before these sensorGet calls
 rgb = sensorGet(sensorSplit,'rgb');
@@ -182,6 +202,7 @@ sensorArray = sensorCreateArray('array type',arrayType,...
     'size',sensorSize, ...
     'quantizationmethod','analog', ...
     'noise flag',0);
+sensorArray(3) = sensorSet(sensorArray(3),'pixel fill factor',pixelFillFactor);
 
 [sensorSplit2, sensorArraySplit2] = sensorComputeArray(sensorArray,oiInput,...
     'method','saturated', ...
@@ -224,18 +245,24 @@ fprintf('Split R_squared" %f\n',stats(1));
 
 %% Image process the RGB and split pixel
 
-ipSplit = ipCreate;
-ipSplit = ipCompute(ipSplit,sensorSplit,'hdr white',true);
-ipWindow(ipSplit,'render flag','rgb','gamma',0.25);
-rgb = ipGet(ipSplit,'srgb');
-fname = fullfile(isethdrsensorRootPath,'local','ip-split.png');
-imwrite(rgb,fname);
-
 ipLPD = ipCreate;
 ipLPD = ipCompute(ipLPD,sensorLPD,'hdr white',true);
-ipWindow(ipLPD,'render flag','rgb','gamma',0.25);
+ipWindow(ipLPD,'render flag','rgb','gamma',0.5);
 rgb = ipGet(ipLPD,'srgb');
 fname = fullfile(isethdrsensorRootPath,'local','ip-LPD.png');
+imwrite(rgb,fname);
+
+ipSPD = ipCreate;
+ipSPD = ipCompute(ipSPD,sensorSPD,'hdr white',true);
+ipWindow(ipSPD,'render flag','rgb','gamma',0.5);
+
+ipSplit = ipCreate;
+ipSplit = ipCompute(ipSplit,sensorSplit,'hdr white',true);
+ipWindow(ipSplit,'render flag','rgb','gamma',0.5);
+
+%%
+rgb = ipGet(ipSplit,'srgb');
+fname = fullfile(isethdrsensorRootPath,'local','ip-split.png');
 imwrite(rgb,fname);
 
 %% Show the improved spatial representation near the headlights
@@ -280,4 +307,5 @@ subtitle('Image 2 saturated'); axis image
 drawnow;
 
 %% END
+
 
