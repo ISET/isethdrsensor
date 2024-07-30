@@ -1,4 +1,8 @@
-%% Make a figure comparing the different types of sensors
+%% TODO
+%
+% Vary the parameters in the split pixel design
+% Try different scenes
+% Update from s_hsSensorCompare
 %
 % Not started yet.  Will shift the split pixel parameters around to
 % see which relative gain is best.
