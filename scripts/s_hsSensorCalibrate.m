@@ -46,7 +46,7 @@ end
 %%
 
 pixelSize = [3 3]*1e-6;
-sensorSize = [1082 1926];
+sensorSize = [1082 1926]/3;
 
 arrayType = 'ovt'; 
 
@@ -62,6 +62,9 @@ sensorArray(3) = sensorSet(sensorArray(3),'pixel fill factor',.1);
 [sensorSplit,sensorArraySplit] = sensorComputeArray(sensorArray,oi,...
     'method','saturated', ...
     'saturated',satLevel);
+
+sensorWindow(sensorSplit);
+
 %{
 % Check that it is OK.
 ip = ipCreate; 
@@ -70,3 +73,4 @@ ip = ipCompute(ip,sensorArraySplit(1),'hdr white',true); ipWindow(ip,'gamma',0.7
 ip = ipCompute(ip,sensorArraySplit(3),'hdr white',true); ipWindow(ip,'gamma',0.7); 
 %}
 
+%% END

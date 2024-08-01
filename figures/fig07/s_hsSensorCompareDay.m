@@ -26,33 +26,9 @@
 % At this time, users need to get oiNight manually from us. We will find a
 % way to put it in an open, downloadable, site.
 %
-
-%%  This is how we created oiDay
-
-%{
-imageID = '1114091636';   % Red car, green car.  
-wgts = [0    0     0    100*0.5175]; % Day
-scene = hsSceneCreate(imageID,'weights',wgts,'denoise',true);
-oiDay = oiCompute(oi, scene,'aperture',aperture,'crop',true,'pixel size',3e-6);
-oiWindow(oiDay,'gamma',0.5,'render flag','rgb');
-
-oiName = fullfile(isethdrsensorRootPath,'local',sprintf('oiDay-%s.mat',imageID));
-save(oiName,'oiDay','-v7.3');
-%}
-
-%% This is how we created oiNight
-
-%{
-imageID = '1114091636';   % Red car, green car.  
-wgts    = [0.2306    0.0012    0.0001    1e-2*0.5175]; % Night
-scene   = hsSceneCreate(imageID,'weights',wgts,'denoise',true);
-oiNight = oiCompute(oi, scene,'aperture',aperture,'crop',true,'pixel size',3e-6);
-oiWindow(oiNight,'render flag','rgb','gamma',0.2);
-
-oiName = fullfile(isethdrsensorRootPath,'local',sprintf('oiNight-%s.mat',imageID));
-save(oiName,'oiNight','-v7.3');
-%}
-
+% To see how we created oiDay and oiNight, see the end of this script,
+% or the end of s_hsSensorCompare.
+%
 
 %%
 ieInit;
@@ -88,21 +64,11 @@ aperture = wvfAperture(wvf,params);
 % Slight defocus.  Just a choice.
 oi = oiSet(oi,'wvf zcoeffs',0.1,'defocus');   
 
-%% Run a standard RGB sensor
-
-% 16e-3 is 60 h frame rate.  Used for all the captures below.
-expTime = .2e-3;   
-whichLine = 859;
-satLevel = .99;
-pixelFillFactor = 0.1;
-
-% whichLine = 142; % An interesting one, also
-
 %% Simulate the Omnivision (OVT) Split pixel technology.
 
-% pixelSize = sensorGet(sensorRGB,'pixel size');
-% sensorSize = sensorGet(sensorRGB,'size');
-
+% LPD is saturated at half a millisecond
+expTime = 0.5e-3;   
+satLevel = .95;
 pixelSize = [3 3]*1e-6;
 sensorSize = [1082 1926];
 
@@ -114,29 +80,106 @@ sensorArray = sensorCreateArray('array type',arrayType,...
     'exp time',expTime, ...
     'quantizationmethod','analog', ...
     'size',sensorSize);
-sensorArray(3) = sensorSet(sensorArray(3),'pixel fill factor',pixelFillFactor);
 
-%% Use just the LPD-LCG sensor
+[sensorSplit,sensorArraySplit] = sensorComputeArray(sensorArray,oiInput,...
+    'method','saturated', ...
+    'saturated',satLevel);
 
-% Base sensor
-sensorLPD = sensorArray(1);
-sensorLPD = sensorCompute(sensorLPD,oiInput);
-sensorWindow(sensorLPD);
-uDataRGB  = sensorPlot(sensorLPD,'volts hline',[1 whichLine],'no fig',true);
+%% Image process the RGB and split pixel
 
-% We probably need to reset gamma to 1 before these sensorGet calls
-rgb = sensorGet(sensorLPD,'rgb');
+ipLPD = ipCreate;
+sensorLPD = sensorArraySplit(1);
+ipLPD = ipCompute(ipLPD,sensorLPD,'hdr white',true);
+ipWindow(ipLPD,'render flag','rgb','gamma',0.5);
 
-imName = sprintf('sensorLPD.png');
-imwrite(rgb,fullfile(isethdrsensorRootPath,'local',imName));
+ipLPD2 = ipCreate;
+sensorLPD2 = sensorArraySplit(2);
+ipLPD2 = ipCompute(ipLPD2,sensorLPD2,'hdr white',true);
+ipWindow(ipLPD2,'render flag','rgb','gamma',0.5);
+
+ipSPD = ipCreate;
+sensorSPD = sensorArraySplit(3);
+ipSPD = ipCompute(ipSPD,sensorSPD,'hdr white',true);
+ipWindow(ipSPD,'render flag','rgb','gamma',0.5);
+
+ipSplit = ipCreate;
+ipSplit = ipCompute(ipSplit,sensorSplit,'hdr white',true);
+ipWindow(ipSplit,'render flag','rgb','gamma',0.5);
 
 %%
 
-% Small photodiode
-sensorSPD = sensorArray(3);
-sensorSPD = sensorCompute(sensorSPD,oiInput);
-sensorWindow(sensorSPD);
+rgb = ipGet(ipSplit,'srgb');
+fname = fullfile(isethdrsensorRootPath,'local','day-split.png');
+imwrite(rgb,fname);
 
+rgb = ipGet(ipLPD,'srgb');
+fname = fullfile(isethdrsensorRootPath,'local','day-lpd.png');
+imwrite(rgb,fname);
+
+rgb = ipGet(ipLPD2,'srgb');
+fname = fullfile(isethdrsensorRootPath,'local','day-lpd2.png');
+imwrite(rgb,fname);
+
+rgb = ipGet(ipSPD,'srgb');
+fname = fullfile(isethdrsensorRootPath,'local','day-spd.png');
+imwrite(rgb,fname);
+
+%%  This is how we created oiDay
+
+%{
+imageID = '1114091636';   % Red car, green car.  
+wgts = [0    0     0    100*0.5175]; % Day
+scene = hsSceneCreate(imageID,'weights',wgts,'denoise',true);
+oiDay = oiCompute(oi, scene,'aperture',aperture,'crop',true,'pixel size',3e-6);
+oiWindow(oiDay,'gamma',0.5,'render flag','rgb');
+
+oiName = fullfile(isethdrsensorRootPath,'local',sprintf('oiDay-%s.mat',imageID));
+save(oiName,'oiDay','-v7.3');
+%}
+
+%% This is how we created oiNight
+
+%{
+imageID = '1114091636';   % Red car, green car.  
+wgts    = [0.2306    0.0012    0.0001    1e-2*0.5175]; % Night
+scene   = hsSceneCreate(imageID,'weights',wgts,'denoise',true);
+oiNight = oiCompute(oi, scene,'aperture',aperture,'crop',true,'pixel size',3e-6);
+oiWindow(oiNight,'render flag','rgb','gamma',0.2);
+
+oiName = fullfile(isethdrsensorRootPath,'local',sprintf('oiNight-%s.mat',imageID));
+save(oiName,'oiNight','-v7.3');
+%}
+
+
+%% Some potential graphs
+%{
+% The pixels where we replace the LPD data with the SPD data should be
+% relatively large, continuous blocks. But the way this happens is a
+% bit odd, because the pixels near vSwing have noise added (a lot of
+% shot noise) and this can drive their values down below the vSwing.
+% Those values are incorrect.
+%
+% We should not add shot noise after clipping at voltage swing.  It
+% must be added PRIOR to clipping. Reread the noise calculation to
+% see what is going on.  In that case, when the intensity is very
+% high, the saturated regions should not have any holes.
+%
+
+saturated = sensorSplit.metadata.saturated;
+
+% Two images
+%   (a) 1 is saturated
+%   (b) 1 is not saturated, 2 is saturated
+%   (c) 2 is saturated
+ieNewGraphWin; imagesc(saturated(:,:,1)); axis image; title('Image 1 saturated')
+ieNewGraphWin; imagesc(~saturated(:,:,1) .* saturated(:,:,2)); axis image; title('Image 2 saturated (but not 1)')
+ieNewGraphWin; imagesc(saturated(:,:,2)); axis image; title('Image 2 saturated'); 
+%}
+
+%% END
+
+
+%{
 %% Without noise
 
 sensorLPD2 = sensorSet(sensorLPD,'noise flag',0);
@@ -181,7 +224,7 @@ ip = ipCompute(ip,sensorArraySplit(1),'hdr white',true); ipWindow(ip,'gamma',0.7
 ip = ipCompute(ip,sensorArraySplit(3),'hdr white',true); ipWindow(ip,'gamma',0.7); 
 %}
 
-sensorWindow(sensorSplit,'gamma',0.7);
+% sensorWindow(sensorSplit,'gamma',0.7);
 
 % We probably need to reset gamma to 1 before these sensorGet calls
 rgb = sensorGet(sensorSplit,'rgb');
@@ -202,7 +245,6 @@ sensorArray = sensorCreateArray('array type',arrayType,...
     'size',sensorSize, ...
     'quantizationmethod','analog', ...
     'noise flag',0);
-sensorArray(3) = sensorSet(sensorArray(3),'pixel fill factor',pixelFillFactor);
 
 [sensorSplit2, sensorArraySplit2] = sensorComputeArray(sensorArray,oiInput,...
     'method','saturated', ...
@@ -243,69 +285,4 @@ fprintf('Split R_squared" %f\n',stats(1));
 % slope = b(2)
 % intercept = b(1)
 
-%% Image process the RGB and split pixel
-
-ipLPD = ipCreate;
-ipLPD = ipCompute(ipLPD,sensorLPD,'hdr white',true);
-ipWindow(ipLPD,'render flag','rgb','gamma',0.5);
-rgb = ipGet(ipLPD,'srgb');
-fname = fullfile(isethdrsensorRootPath,'local','ip-LPD.png');
-imwrite(rgb,fname);
-
-ipSPD = ipCreate;
-ipSPD = ipCompute(ipSPD,sensorSPD,'hdr white',true);
-ipWindow(ipSPD,'render flag','rgb','gamma',0.5);
-
-ipSplit = ipCreate;
-ipSplit = ipCompute(ipSplit,sensorSplit,'hdr white',true);
-ipWindow(ipSplit,'render flag','rgb','gamma',0.5);
-
-%%
-rgb = ipGet(ipSplit,'srgb');
-fname = fullfile(isethdrsensorRootPath,'local','ip-split.png');
-imwrite(rgb,fname);
-
-%% Show the improved spatial representation near the headlights
-
-% 626 row is bottom two lights  150 - 600
-% 586 row is next lights up 250 900
-% 551 row the distant cars - 1000 1200
-% 296 row one of the upper lights  - 600 800
-uSplit = ipPlot(ipSplit,'horizontal line luminance',[1 626],'no figure');
-uLPD   = ipPlot(ipLPD,'horizontal line luminance',[1 626],'no figure');
-
-ieNewGraphWin([],'wide');
-plot(uSplit.pos,ieScale(uSplit.data,1),'k-',...
-    uLPD.pos,ieScale(uLPD.data,1),'ko:','LineWidth',2);
-legend({'3-capture OVT','LPD-LCG'});
-grid on; set(gca,'xlim',[150 600]); 
-xlabel('Column'); ylabel('Relative luminance');
-
-tmp = sprintf('split-LPD-luminance.pdf');
-exportgraphics(gcf,fullfile(isethdrsensorRootPath,'local',tmp));
-
-%% Some potential graphs
-
-% In most places, we can average the data from the two LPD captures
-% There is only a small region where 2 is captured and 1 is not.
-% In the region where 1 is saturated, 2 is also saturated.  There, we use
-% the SPD data.
-saturated = sensorSplit.metadata.saturated;
-
-% Two images
-%   (a) 1 is saturated
-%   (b) 1 is not saturated, 2 is saturated
-%   (c) 2 is saturated
-ieNewGraphWin([],'tall');
-tiledlayout(3,1);
-nexttile; imagesc(saturated(:,:,1)); axis image;
-subtitle('Image 1 saturated')
-nexttile; imagesc(~saturated(:,:,1) .* saturated(:,:,2)); axis image;
-subtitle('Image 2 saturated (but not 1)')
-nexttile; imagesc(saturated(:,:,2)); axis image
-subtitle('Image 2 saturated'); axis image
-drawnow;
-
-%% END
-
-
+%}
