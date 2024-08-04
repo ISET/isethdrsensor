@@ -27,7 +27,7 @@ for ii = 1:numel(lux)
     ipRGBW = ipCompute(ip, thisSensorRGBW, 'hdr white', true);
     ipWindow(ipRGBW); rgbwImg = ipGet(ipRGBW, 'srgb');
     % rgbw using restormer
-    ipRGBWNN = ipComputeNN(thisSensorRGBW, 'rgbw');
+    ipRGBWNN = ipComputeNN(thisSensorRGBW, 'ar0132at-rgbw');
     ipWindow(ipRGBWNN); rgbwNNImg = ipGet(ipRGBWNN, 'srgb');
     if ii==1
         % gt
@@ -75,6 +75,8 @@ set(gca, 'XScale', 'log');
 imwrite(rgbwImg,'~/Desktop/rgbw.png')
 imwrite(rgbwNNImg,'~/Desktop/rgbwNN.png')
 imwrite(rgbImg,'~/Desktop/rgb.png')
+
+
 %% MTF
 scene = sceneCreate('slanted bar', 500);
 oi = oiCreate;
@@ -84,6 +86,8 @@ sensorRGBW = sensorSet(sensorRGBW,'match oi',oi);
 lux = [0.1 1 10];
 rect = [154    41   166   234];
 dx = 3e-3;
+clear gtImg
+
 for ii = 1:numel(lux)
     oi = oiAdjustIlluminance(oi, lux(ii));
     
@@ -96,10 +100,9 @@ for ii = 1:numel(lux)
     ipRGBW = ipCompute(ip, thisSensorRGBW, 'hdr white', true);
     ipWindow(ipRGBW); rgbwImg = ipGet(ipRGBW, 'srgb');
     % rgbw using restormer
-    ipRGBWNN = ipComputeNN(thisSensorRGBW, 'rgbw');
+    ipRGBWNN = ipComputeNN(thisSensorRGBW, 'ar0132at-rgbw');
     ipWindow(ipRGBWNN); rgbwNNImg = ipGet(ipRGBWNN, 'srgb');
-    if ii==1
-        % gt
+    if ii==1        
         sensorI = sensorCreateIdeal('match',sensorRGB);
         sensorI = sensorCompute(sensorI,oi);
         sensorWindow(sensorI(3));
@@ -138,6 +141,7 @@ for ii = 1:numel(lux)
     ret = ISO12233(barImage, dx);
     rgbwNNMTF50(ii) = ret;
 end
+
 %%
 figure;
 for jj = 1:3

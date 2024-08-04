@@ -1,8 +1,8 @@
 function ip = ipComputeNN(inputSensor, type, ipEXR)
-% ipComputeNN Computes the image processing pipeline using a neural network for demosaicing.
+% Computes the image processing pipeline using a neural network for demosaicing.
 %
 % Syntax:
-%   ip = ipComputeNN(sensor, type)
+%   ip = ipComputeNN(sensor, type, ipEXR)
 %
 % Description:
 %   This function performs image processing on the input sensor data using a neural network
@@ -49,7 +49,8 @@ if notDefined('ipEXR')
     [p, n, ext] = fileparts(fname);
     ipEXR = sprintf('%s-ip%s', fullfile(p, n), ext);
     % Define the output EXR filename for the demosaiced image
-    return;
+    % return;
+    
     disp('INFO: Demosaicing started ...')
     % Perform neural network-based demosaicing
     isetDemosaicNN(type, fname, ipEXR);
