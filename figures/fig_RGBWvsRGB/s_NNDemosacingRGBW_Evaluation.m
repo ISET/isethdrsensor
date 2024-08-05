@@ -1,20 +1,44 @@
 %% Setup
+%
+% Images comparing RGB and RGBW data after standard IP processing.
+%
+% Restormer for RGBW.  Adaptive laplacian for RGB.
+%
+%
+% See also
+%
+
+%%
 ieInit;
+
+%% Create the two sensors and IP
+
 sensorRGBW = sensorCreate('ar0132at',[],'rgbw');
-sensorRGB = sensorCreate('ar0132at',[],'rgb');
-sensorRGB = sensorSet(sensorRGB,'exp time',1/30);
-sensorRGBW = sensorSet(sensorRGBW,'exp time',1/30);
+sensorRGB  = sensorCreate('ar0132at',[],'rgb');
+sensorRGB  = sensorSet(sensorRGB,'exp time',1/60);
+sensorRGBW = sensorSet(sensorRGBW,'exp time',1/60);
+
 ip = ipCreate;
 ip = ipSet(ip,'demosaic method','Adaptive Laplacian'); 
-%% Color
+
+%% Color test scene
+
 scene = sceneCreate('macbeth',80);
+
 oi = oiCreate;
 oi = oiCompute(oi, scene,'crop',true,'pixel size', 3e-6);
-idx = 1;
+
+% Match the sensor spatial parameters to the OI
 sensorRGB = sensorSet(sensorRGB,'match oi',oi);
 sensorRGBW = sensorSet(sensorRGBW,'match oi',oi);
-%%
-lux = [0.1:0.1:1, 2:10];
+
+idx = 1;
+
+%% Start low, and progress to high, optical image illuminance
+
+% lux = [0.1: 0.1:1, 2:10];   % Zhenyi's original
+lux = logspace(-2,1,5);      % Five levels
+
 for ii = 1:numel(lux)
     oi = oiAdjustIlluminance(oi, lux(ii));
     
@@ -22,15 +46,23 @@ for ii = 1:numel(lux)
     thisSensorRGB = sensorCompute(sensorRGB,oi);
     ipRGB = ipCompute(ip, thisSensorRGB);
     ipWindow(ipRGB); rgbImg = ipGet(ipRGB, 'srgb');
+
+    % rgbw using restormer
+    ipRGBNN = ipComputeNN(thisSensorRGBW, 'ar0132at-rgb');
+    ipWindow(ipRGBNN); rgbNNImg = ipGet(ipRGBNN, 'srgb');
+    %{
     % rgbw
     thisSensorRGBW = sensorCompute(sensorRGBW,oi);
     ipRGBW = ipCompute(ip, thisSensorRGBW, 'hdr white', true);
     ipWindow(ipRGBW); rgbwImg = ipGet(ipRGBW, 'srgb');
+    %}
+
     % rgbw using restormer
     ipRGBWNN = ipComputeNN(thisSensorRGBW, 'ar0132at-rgbw');
     ipWindow(ipRGBWNN); rgbwNNImg = ipGet(ipRGBWNN, 'srgb');
+
     if ii==1
-        % gt
+        % Make the ground truth image data the first time
         sensorI = sensorCreateIdeal('match',sensorRGB);
         sensorI = sensorCompute(sensorI,oi);
         sensorWindow(sensorI(3));
@@ -46,21 +78,25 @@ for ii = 1:numel(lux)
 
         % Compute the final image processing
         ipIdeal = ipCompute(ipIdeal, thisSensorRGB);
+
         % ipWindow(ipIdeal);
         rgbGT = ipGet(ipIdeal, 'srgb');
-
         rgbGT = ieScale(rgbGT, 1);
     end
-    rgbImg = ieScale(rgbImg, 1);
-    rgbwImg = ieScale(rgbwImg, 1);
+
+    rgbImg    = ieScale(rgbImg, 1);
+    rgbwImg   = ieScale(rgbwImg, 1);
     rgbwNNImg = ieScale(rgbwNNImg, 1);
     
-    dE_rgb(idx) = mean2(imcolordiff(rgbGT, rgbImg));
-    dE_rgbw(idx) = mean2(imcolordiff(rgbGT, rgbwImg));
+    % Calculate delta E.  Why isn't this just ii?
+    dE_rgb(idx)    = mean2(imcolordiff(rgbGT, rgbImg));
+    dE_rgbw(idx)   = mean2(imcolordiff(rgbGT, rgbwImg));
     dE_rgbwNN(idx) = mean2(imcolordiff(rgbGT, rgbwNNImg));
     idx=idx+1;
 end
-%%
+
+%% 
+
 figure(1);
 plot(lux, dE_rgb(1:19), 'color', [0.8500, 0.3250, 0.0980], 'LineWidth', 2); hold on  % Orange
 plot(lux, dE_rgbw(1:19), 'color', [0.4660, 0.6740, 0.1880], 'LineWidth', 2);         % Green
@@ -72,12 +108,13 @@ set(gca, 'FontSize', 16);
 set(gca, 'XScale', 'log');
 
 %%
+
 imwrite(rgbwImg,'~/Desktop/rgbw.png')
 imwrite(rgbwNNImg,'~/Desktop/rgbwNN.png')
 imwrite(rgbImg,'~/Desktop/rgb.png')
 
 
-%% MTF
+%% MTF comparison
 scene = sceneCreate('slanted bar', 500);
 oi = oiCreate;
 oi = oiCompute(oi, scene,'crop',true,'pixel size', 3e-6);
