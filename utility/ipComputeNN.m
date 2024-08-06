@@ -1,4 +1,4 @@
-function ip = ipComputeNN(inputSensor, type, ipEXR, data_max)
+function ip = ipComputeNN(inputSensor, type, ipEXR)
 % Computes the image processing pipeline using a neural network for demosaicing.
 %
 % Syntax:
@@ -56,7 +56,7 @@ if notDefined('ipEXR')
     % Perform neural network-based demosaicing
     isetDemosaicNN(type, fname, ipEXR);
 else
-    data = sensorGet(sensor,'volts');
+    data = sensorGet(inputSensor,'volts');
     data_max = max(data(:));
 end
 
