@@ -10,11 +10,11 @@ function ip = ipComputeNN(inputSensor, type, ipEXR)
 %   transforms, and returns the final image processing structure.
 %
 % Inputs:
-%   sensor - The sensor data structure containing image information.
+%   sensor - ISET sensor data structure containing image information.
 %   type   - The type of neural network to use for demosaicing.
 %
 % Outputs:
-%   ip     - The final image processing structure after applying the neural network demosaicing
+%   ip     - ISET image processing structure after applying the neural network demosaicing
 %            and other necessary transformations.
 %
 % Example:

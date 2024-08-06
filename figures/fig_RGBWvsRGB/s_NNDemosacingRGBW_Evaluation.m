@@ -279,24 +279,29 @@ titleNames = {'0.1 lux', '0.25 lux'};
 for nn = 1:2
     subplot(2, 1, nn);
     % Plot for ipIdeal
-    rgb = rgb2gray(ipGet(ipIdeal, 'srgb'));
-    plot(rgb(whichLine,:,1), 'color', [0.4940, 0.1840, 0.5560], 'LineWidth', 2, 'LineStyle', '-'); hold on  
+    data = ipGet(ipIdeal, 'data luminance');
+    data = ieScale(data, 1);
+    plot(data(whichLine,:,1), 'color', [0.4940, 0.1840, 0.5560], 'LineWidth', 2, 'LineStyle', '-'); hold on  
     
     % Plot for ipRGB
     for ss = 2:3
-        thisSensor = sensorList{ss};
-        rgb = rgb2gray(ipGet(thisSensor{nn}, 'srgb'));
-        plot(rgb(whichLine,:,1), 'color', colors{ss}, 'LineWidth', 2, 'LineStyle', lineStyles{ss}); 
+        thisIP = sensorList{ss};
+        data = ipGet(thisIP{nn}, 'data luminance');
+        data = ieScale(data, 1);
+        % data = ipGet(thisSensor{nn}, 'data display');data = data(:,:,2);
+        plot(data(whichLine,:,1), 'color', colors{ss}, 'LineWidth', 2, 'LineStyle', lineStyles{ss}); 
+
     end
 
     % Customize each subplot
     legend('Ideal', 'RGB-NN', 'RGBW-NN', 'FontSize', 12, 'Location', 'Best');
     xlabel('Positions', 'FontSize', 14);
-    ylabel('Intensity', 'FontSize', 14);
-    set(gca, 'FontSize', 14);
+    ylabel('Log normalized luminance (cd/m^2)', 'FontSize', 12);
+    set(gca, 'FontSize', 12);
     xlim([0, 512]);
-    ylim([0, 0.95]);
+    ylim([0, 1.5]);
     title(titleNames{nn})
+    set(gca, 'YScale', 'log');
 end
 
 %%
