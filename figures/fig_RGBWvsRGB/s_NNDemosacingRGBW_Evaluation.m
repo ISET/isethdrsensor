@@ -32,15 +32,14 @@ oi = oiCompute(oi, scene,'crop',true,'pixel size', 3e-6);
 sensorRGB = sensorSet(sensorRGB,'match oi',oi);
 sensorRGBW = sensorSet(sensorRGBW,'match oi',oi);
 
-idx = 1;
-
 %% Start low, and progress to high, optical image illuminance
 
 % lux = [0.1: 0.1:1, 2:10];   % Zhenyi's original
-lux = logspace(-2,1,5);      % Five levels
-
+lux = logspace(-2,1,10);      % Five levels
+%
 for ii = 1:numel(lux)
     oi = oiAdjustIlluminance(oi, lux(ii));
+
     
     % rgb
     thisSensorRGB = sensorCompute(sensorRGB,oi);
@@ -48,16 +47,11 @@ for ii = 1:numel(lux)
     ipWindow(ipRGB); rgbImg = ipGet(ipRGB, 'srgb');
 
     % rgbw using restormer
-    ipRGBNN = ipComputeNN(thisSensorRGBW, 'ar0132at-rgb');
+    ipRGBNN = ipComputeNN(thisSensorRGB, 'ar0132at-rgb');
     ipWindow(ipRGBNN); rgbNNImg = ipGet(ipRGBNN, 'srgb');
-    %{
-    % rgbw
-    thisSensorRGBW = sensorCompute(sensorRGBW,oi);
-    ipRGBW = ipCompute(ip, thisSensorRGBW, 'hdr white', true);
-    ipWindow(ipRGBW); rgbwImg = ipGet(ipRGBW, 'srgb');
-    %}
 
     % rgbw using restormer
+    thisSensorRGBW = sensorCompute(sensorRGBW,oi);
     ipRGBWNN = ipComputeNN(thisSensorRGBW, 'ar0132at-rgbw');
     ipWindow(ipRGBWNN); rgbwNNImg = ipGet(ipRGBWNN, 'srgb');
 
@@ -65,7 +59,7 @@ for ii = 1:numel(lux)
         % Make the ground truth image data the first time
         sensorI = sensorCreateIdeal('match',sensorRGB);
         sensorI = sensorCompute(sensorI,oi);
-        sensorWindow(sensorI(3));
+        % sensorWindow(sensorI(3));
         gtImg(:,:,1) = sensorI(1).data.volts;
         gtImg(:,:,2) = sensorI(2).data.volts;
         gtImg(:,:,3) = sensorI(3).data.volts;
@@ -85,23 +79,25 @@ for ii = 1:numel(lux)
     end
 
     rgbImg    = ieScale(rgbImg, 1);
-    rgbwImg   = ieScale(rgbwImg, 1);
+    rgbNNImg   = ieScale(rgbNNImg, 1);
     rgbwNNImg = ieScale(rgbwNNImg, 1);
     
-    % Calculate delta E.  Why isn't this just ii?
-    dE_rgb(idx)    = mean2(imcolordiff(rgbGT, rgbImg));
-    dE_rgbw(idx)   = mean2(imcolordiff(rgbGT, rgbwImg));
-    dE_rgbwNN(idx) = mean2(imcolordiff(rgbGT, rgbwNNImg));
-    idx=idx+1;
+    dE_rgb(ii)    = mean2(imcolordiff(rgbGT, rgbImg));
+    dE_rgbnn(ii)  = mean2(imcolordiff(rgbGT, rgbNNImg));
+    dE_rgbwNN(ii) = mean2(imcolordiff(rgbGT, rgbwNNImg));
 end
-
+%}
 %% 
 
-figure(1);
-plot(lux, dE_rgb(1:19), 'color', [0.8500, 0.3250, 0.0980], 'LineWidth', 2); hold on  % Orange
-plot(lux, dE_rgbw(1:19), 'color', [0.4660, 0.6740, 0.1880], 'LineWidth', 2);         % Green
-plot(lux, dE_rgbwNN(1:19), 'color', [0.4940, 0.1840, 0.5560], 'LineWidth', 2);       % Purple
-legend('RGB', 'RGBW', 'RGBW-NN');
+figure;
+% Blue line with circle markers
+plot(lux, dE_rgb(:), 'color', [0.0000, 0.4470, 0.7410], 'LineWidth', 2, 'LineStyle', '-', 'Marker', 'o', 'MarkerSize', 6); hold on  
+% Red line with square markers
+plot(lux, dE_rgbnn(:), 'color', [0.8500, 0.3250, 0.0980], 'LineWidth', 2, 'LineStyle', '--', 'Marker', 's', 'MarkerSize', 6);         
+% Green line with diamond markers
+plot(lux, dE_rgbwNN(:), 'color', [0.4660, 0.6740, 0.1880], 'LineWidth', 2, 'LineStyle', ':', 'Marker', 'd', 'MarkerSize', 6);       
+
+legend('RGB', 'RGB-NN', 'RGBW-NN', 'FontSize', 14, 'Location', 'Best');
 xlabel('Log Mean Illuminance (lux)', 'FontSize', 16);
 ylabel('deltaE', 'FontSize', 16);
 set(gca, 'FontSize', 16);
@@ -109,7 +105,7 @@ set(gca, 'XScale', 'log');
 
 %%
 
-imwrite(rgbwImg,'~/Desktop/rgbw.png')
+imwrite(rgbNNImg,'~/Desktop/rgbNN.png')
 imwrite(rgbwNNImg,'~/Desktop/rgbwNN.png')
 imwrite(rgbImg,'~/Desktop/rgb.png')
 
@@ -120,7 +116,7 @@ oi = oiCreate;
 oi = oiCompute(oi, scene,'crop',true,'pixel size', 3e-6);
 sensorRGB = sensorSet(sensorRGB,'match oi',oi);
 sensorRGBW = sensorSet(sensorRGBW,'match oi',oi);
-lux = [0.1 1 10];
+lux = [0.05 0. 10];
 rect = [154    41   166   234];
 dx = 3e-3;
 clear gtImg
@@ -133,10 +129,10 @@ for ii = 1:numel(lux)
     ipRGB = ipCompute(ip, thisSensorRGB);
     ipWindow(ipRGB); rgbImg = ipGet(ipRGB, 'srgb');
     % rgbw
-    thisSensorRGBW = sensorCompute(sensorRGBW,oi);
-    ipRGBW = ipCompute(ip, thisSensorRGBW, 'hdr white', true);
-    ipWindow(ipRGBW); rgbwImg = ipGet(ipRGBW, 'srgb');
+    ipRGBNN = ipComputeNN(thisSensorRGB, 'ar0132at-rgb');
+    ipWindow(ipRGBNN); rgbNNImg = ipGet(ipRGBNN, 'srgb');
     % rgbw using restormer
+    thisSensorRGBW = sensorCompute(sensorRGBW,oi);
     ipRGBWNN = ipComputeNN(thisSensorRGBW, 'ar0132at-rgbw');
     ipWindow(ipRGBWNN); rgbwNNImg = ipGet(ipRGBWNN, 'srgb');
     if ii==1        
@@ -163,14 +159,14 @@ for ii = 1:numel(lux)
         ret = ISO12233(barImage, dx);
     end
     rgbImg = ieScale(rgbImg, 1);
-    rgbwImg = ieScale(rgbwImg, 1);
+    rgbNNImg = ieScale(rgbNNImg, 1);
     rgbwNNImg = ieScale(rgbwNNImg, 1);
 
     barImage = imcrop(rgbImg,rect);
     ret = ISO12233(barImage, dx,[],'none');
     rgbMTF50(ii) = ret;
 
-    barImage = imcrop(rgbwImg,rect);
+    barImage = imcrop(rgbNNImg,rect);
     ret = ISO12233(barImage, dx,[],'none');
     rgbwMTF50(ii) = ret;
 
@@ -181,76 +177,258 @@ end
 
 %%
 figure;
-for jj = 1:3
+for jj = 1%[4, 7, 10]
+    result =  rgbMTF50(jj);
+    plot(result.freq, result.mtf(:,4), 'color', [0.0000, 0.4470, 0.7410], 'LineWidth', 2, 'LineStyle', '-');hold on;
+    result =  rgbwMTF50(jj);
+    plot(result.freq, result.mtf(:,4), 'color', [0.8500, 0.3250, 0.0980], 'LineWidth', 2, 'LineStyle', '--');
     result =  rgbwNNMTF50(jj);
-    p = plot(result.freq, result.mtf(:,4));
-    set(p,'linewidth',2);
-    hold on;
+    plot(result.freq, result.mtf(:,4), 'color', [0.4660, 0.6740, 0.1880], 'LineWidth', 2, 'LineStyle', '-.');
+    hold off;
 end
-legend('0.1lux','1lux','10lux');
+% legend('0.1lux','1lux','10lux');
+legend('RGB','RGB-NN','RGBW-NN', 'FontSize', 14, 'Location', 'Best')
 % [p,fname,e] = fileparts(ttext);
-title('MTF for RGBWNN');
-xlabel('Spatial frequency cy/mm');
-ylabel('Contrast reduction (SFR)');
+title('MTF at 0.1 lux', 'FontSize', 16);
+xlabel('Spatial frequency cy/mm', 'FontSize', 16);
+ylabel('Contrast reduction (SFR)', 'FontSize', 16);
 ylim([0,1]);
-
-%% Driving scene
-imageID = '1114090605';
-
-lgt = {'headlights','streetlights','otherlights','skymap'};
-destPath = fullfile(isethdrsensorRootPath,'data',imageID);
-
-scenes = cell(numel(lgt,1));
-for ll = 1:numel(lgt)
-    thisFile = sprintf('%s_%s.exr',imageID,lgt{ll});
-    destFile = fullfile(destPath,thisFile);
-    scenes{ll} = piEXR2ISET(destFile);
-end
-disp('Done loading.')
-
-
-wgts_day = [0.5019    0.0063    0.0083    0.01];
-scene = sceneAdd(scenes, wgts_day);
-thisScene = piAIdenoise(scene);
-
-[oi,wvf] = oiCreate('wvf');
-% wvf = wvfSet(wvf, 'spatial samples',512);
-[aperture, params] = wvfAperture(wvf,'nsides',5,...
-    'dot mean',50, 'dot sd',20, 'dot opacity',0.5,'dot radius',5,...
-    'line mean',50, 'line sd', 20, 'line opacity',0.5,'linewidth',2);
-
-% oi = oiSet(oi,'wvf zcoeffs',0,'defocus');
-oi = oiCompute(oi, thisScene,'aperture',aperture,'crop',true,'pixel size',3e-6);
-
-eTime = 1/60;
-
-sensorRGBW = sensorCreate('ar0132at',[],'rgbw');
-sensorRGB = sensorCreate('ar0132at',[],'rgb');
-
-sensorRGBW = sensorSet(sensorRGBW,'exp time',eTime);
-sensorRGBW = sensorSet(sensorRGBW,'match oi',oi);
-
-sensorRGBW = sensorSet(sensorRGBW,'analog gain', 1/10);
-sensorRGBW = sensorCompute(sensorRGBW,oi);
-
-sensorWindow(sensorRGBW);
-
-sensorRGB = sensorSet(sensorRGB,'exp time',eTime);
-sensorRGB = sensorSet(sensorRGB,'match oi',oi);
-
-sensorRGB = sensorSet(sensorRGB,'analog gain', 1/10);
-sensorRGB = sensorCompute(sensorRGB,oi);
-
-sensorWindow(sensorRGB);
 %%
-ip = ipCreate;
-ipRGB = ipCompute(ip, sensorRGB);
-ipWindow(ipRGB);
-srgb = ipGet(ipRGB,'srgb');imwrite(srgb, '~/Desktop/rgb.jpg');
+% https://stacks.stanford.edu/file/druid:tb259jf5957/ISET_fruit.zip
+filename = 'FruitMCC.mat';
+oi = oiFromFile(filename,'multispectral');
+%%
+% oi = oiSet(oi, 'samplespacing', 1.99e-6);
+% oi = oiCrop(oi,ceil([0.8876 0.5000 511 464.2640]));
+% oiWindow(oi);
+sensorRGB = sensorSet(sensorRGB,'pixel size',4e-6);
+sensorRGB = sensorSet(sensorRGB, 'sensor size', [512, 512]);
+sensorRGBW = sensorSet(sensorRGBW,'pixel size',4e-6);
+sensorRGBW = sensorSet(sensorRGBW, 'sensor size', [512, 512]);
+%
+% lux = logspace(-2,1,10);      % Five levels
+lux = [0.1, 0.25];
+%
+for ii = 1:numel(lux)
+    oi = oiAdjustIlluminance(oi, lux(ii));
+    % rgb
+    thisSensorRGB = sensorCompute(sensorRGB,oi);
+    ipRGB{ii} = ipCompute(ip, thisSensorRGB);
+    ipWindow(ipRGB{ii}); rgbImg = ipGet(ipRGB{ii}, 'srgb');
 
+    % rgbw using restormer
+    ipRGBNN{ii} = ipComputeNN(thisSensorRGB, 'ar0132at-rgb');
+    ipWindow(ipRGBNN{ii}); rgbNNImg = ipGet(ipRGBNN{ii}, 'srgb');
 
-ipRGBW = ipComputeNN(sensorRGBW, 'rgbw');
-ipNNFile = '/Users/zhenyi/git_repo/dev/isethdrsensor/local/exr/01-Jul-2024/ISETSensor/ISET_Sensor/17H05S-rgbw-16.67.exr';
-ipRGBW = ipComputeNN(sensorRGBW, 'rgbw',ipNNFile);
-ipWindow(ipRGBW);
-srgb = ipGet(ipRGBW,'srgb');imwrite(srgb, '~/Desktop/rgbw.jpg');
+    % rgbw using restormer
+    thisSensorRGBW = sensorCompute(sensorRGBW,oi);
+    ipRGBWNN{ii} = ipComputeNN(thisSensorRGBW, 'ar0132at-rgbw');
+    ipWindow(ipRGBWNN{ii}); rgbwNNImg = ipGet(ipRGBWNN{ii}, 'srgb');
+
+    if ii==1
+        % Make the ground truth image data the first time
+        sensorI = sensorCreateIdeal('match',sensorRGB);
+        sensorI = sensorCompute(sensorI,oi);
+        % sensorWindow(sensorI(3));
+        gtImg(:,:,1) = sensorI(1).data.volts;
+        gtImg(:,:,2) = sensorI(2).data.volts;
+        gtImg(:,:,3) = sensorI(3).data.volts;
+
+        ipIdeal = ipRGB{1};
+        ipIdeal = ipSet(ipIdeal, 'demosaic method', 'skip');
+        ipIdeal = ipSet(ipIdeal, 'transform method', 'current');
+        % Set the sensor space image in the image processing structure
+        ipIdeal = ipSet(ipIdeal, 'sensor space', gtImg);
+
+        % Compute the final image processing
+        ipIdeal = ipCompute(ipIdeal, thisSensorRGB);
+
+        ipWindow(ipIdeal);
+        rgbGT = ipGet(ipIdeal, 'srgb');
+        rgbGT = ieScale(rgbGT, 1);
+    end
+    savedPath = fullfile(isethdrsensorRootPath,'figures/fig_RGBWvsRGB');
+    imwrite(rgbImg,sprintf('%s/rgb-%d.png',savedPath,ii));
+    imwrite(rgbNNImg,sprintf('%s/rgbNN-%d.png',savedPath,ii));
+    imwrite(rgbwNNImg,sprintf('%s/rgbwNN-%d.png',savedPath,ii));
+    rgbImg    = ieScale(rgbImg, 1);
+    rgbNNImg   = ieScale(rgbNNImg, 1);
+    rgbwNNImg = ieScale(rgbwNNImg, 1);
+    
+    % psnr_rgb(ii)    = psnr(rgbImg,rgbGT);
+    % psnr_rgbnn(ii)  = psnr(rgbNNImg, rgbGT);
+    % psnr_rgbwNN(ii) = psnr(rgbwNNImg, rgbGT);
+    % 
+    % ssim_rgb(ii)    = ssim(rgbImg, rgbGT);
+    % ssim_rgbnn(ii)  = ssim(rgbNNImg, rgbGT);
+    % ssim_rgbwNN(ii) = ssim(rgbwNNImg, rgbGT);
+end
+%
+sensorName = {'ipRGB','ipRGBNN','ipRGBWNN'};
+sensorList{1} = ipRGB;
+sensorList{2} = ipRGBNN;
+sensorList{3} = ipRGBWNN;
+%
+figure;
+whichLine = 155;
+
+% Define colors and line styles for better distinction
+colors = {[0.4660, 0.6740, 0.1880],[0.8500, 0.3250, 0.0980],  [0.0000, 0.4470, 0.7410]};
+lineStyles = {'-', '-', '-.'};
+titleNames = {'0.1 lux', '0.25 lux'};
+for nn = 1:2
+    subplot(2, 1, nn);
+    % Plot for ipIdeal
+    rgb = rgb2gray(ipGet(ipIdeal, 'srgb'));
+    plot(rgb(whichLine,:,1), 'color', [0.4940, 0.1840, 0.5560], 'LineWidth', 2, 'LineStyle', '-'); hold on  
+    
+    % Plot for ipRGB
+    for ss = 2:3
+        thisSensor = sensorList{ss};
+        rgb = rgb2gray(ipGet(thisSensor{nn}, 'srgb'));
+        plot(rgb(whichLine,:,1), 'color', colors{ss}, 'LineWidth', 2, 'LineStyle', lineStyles{ss}); 
+    end
+
+    % Customize each subplot
+    legend('Ideal', 'RGB-NN', 'RGBW-NN', 'FontSize', 12, 'Location', 'Best');
+    xlabel('Positions', 'FontSize', 14);
+    ylabel('Intensity', 'FontSize', 14);
+    set(gca, 'FontSize', 14);
+    xlim([0, 512]);
+    ylim([0, 0.95]);
+    title(titleNames{nn})
+end
+
+%%
+%{
+
+%%
+oi = oiAdjustIlluminance(oi, 1);
+for ii = 1:numel(lux)
+    % oi = oiAdjustIlluminance(oi, lux(ii));
+    sensorRGB  = sensorSet(sensorRGB,'exp time', expTime(ii));
+    sensorRGBW = sensorSet(sensorRGBW,'exp time',expTime(ii));
+    
+    % rgb
+    thisSensorRGB = sensorCompute(sensorRGB,oi);
+
+    % rgb using restormer
+    ipRGBNN = ipComputeNN(thisSensorRGB, 'ar0132at-rgb');
+
+    % rgbw using restormer
+    thisSensorRGBW = sensorCompute(sensorRGBW,oi);
+    ipRGBWNN = ipComputeNN(thisSensorRGBW, 'ar0132at-rgbw');
+
+end
+
+%%
+for ii = 1:numel(lux)
+    % oi = oiAdjustIlluminance(oi, lux(ii));
+    sensorRGB  = sensorSet(sensorRGB,'exp time',expTime(ii));
+    sensorRGBW = sensorSet(sensorRGBW,'exp time',expTime(ii));
+    
+    % rgb
+    thisSensorRGB = sensorCompute(sensorRGB,oi);
+    ipRGB = ipCompute(ip, thisSensorRGB);
+    ipWindow(ipRGB); rgbImg = ipGet(ipRGB, 'srgb');
+
+    % rgbw using restormer
+    ipEXR = sprintf('/Users/zhenyi/git_repo/dev/isethdrsensor/local/exr/05-Aug-2024/ISET_Sensor_RGB/normalized/13H46S-ar0132at-rgb-%.2f.exr', sensorGet(thisSensorRGB, 'exp time', 'ms'));
+    ipRGBNN = ipComputeNN(thisSensorRGB, 'ar0132at-rgb',ipEXR);
+    ipWindow(ipRGBNN); rgbNNImg = ipGet(ipRGBNN, 'srgb');
+    %{
+    % rgbw
+    
+    ipRGBW = ipCompute(ip, thisSensorRGBW, 'hdr white', true);
+    ipWindow(ipRGBW); rgbwImg = ipGet(ipRGBW, 'srgb');
+    %}
+
+    % rgbw using restormer
+    thisSensorRGBW = sensorCompute(sensorRGBW,oi);
+    ipEXR = sprintf('/Users/zhenyi/git_repo/dev/isethdrsensor/local/exr/05-Aug-2024/ISET_Sensor_RGBW/normalized/13H46S-ar0132at-rgbw-%.2f.exr', sensorGet(thisSensorRGBW, 'exp time', 'ms'));
+    ipRGBWNN = ipComputeNN(thisSensorRGBW, 'ar0132at-rgbw',ipEXR);
+    ipWindow(ipRGBWNN); rgbwNNImg = ipGet(ipRGBWNN, 'srgb');
+
+    if ii==1
+        % Make the ground truth image data the first time
+        sensorI = sensorCreateIdeal('match',sensorRGB);
+        sensorI = sensorCompute(sensorI,oi);
+        % sensorWindow(sensorI(3));
+        gtImg(:,:,1) = sensorI(1).data.volts;
+        gtImg(:,:,2) = sensorI(2).data.volts;
+        gtImg(:,:,3) = sensorI(3).data.volts;
+
+        ipIdeal = ipRGB;
+        ipIdeal = ipSet(ipIdeal, 'demosaic method', 'skip');
+        ipIdeal = ipSet(ipIdeal, 'transform method', 'current');
+        % Set the sensor space image in the image processing structure
+        ipIdeal = ipSet(ipIdeal, 'sensor space', gtImg);
+
+        % Compute the final image processing
+        ipIdeal = ipCompute(ipIdeal, thisSensorRGB);
+
+        % ipWindow(ipIdeal);
+        rgbGT = ipGet(ipIdeal, 'srgb');
+        rgbGT = ieScale(rgbGT, 1);
+    end
+
+    rgbImg    = ieScale(rgbImg, 1);
+    rgbNNImg  = ieScale(rgbNNImg, 1);
+    rgbwNNImg = ieScale(rgbwNNImg, 1);
+    
+    dE_rgb(ii)    = mean2(imcolordiff(rgbGT, rgbImg));
+    dE_rgbnn(ii)  = mean2(imcolordiff(rgbGT, rgbNNImg));
+    dE_rgbwNN(ii) = mean2(imcolordiff(rgbGT, rgbwNNImg));
+end
+%}
+figure;
+% Blue line with circle markers
+plot(lux, psnr_rgb(:), 'color', [0.0000, 0.4470, 0.7410], 'LineWidth', 2, 'LineStyle', '-', 'Marker', 'o', 'MarkerSize', 6); hold on  
+% Red line with square markers
+plot(lux, psnr_rgbnn(:), 'color', [0.8500, 0.3250, 0.0980], 'LineWidth', 2, 'LineStyle', '--', 'Marker', 's', 'MarkerSize', 6);         
+% Green line with diamond markers
+plot(lux, psnr_rgbwNN(:), 'color', [0.4660, 0.6740, 0.1880], 'LineWidth', 2, 'LineStyle', ':', 'Marker', 'd', 'MarkerSize', 6);       
+
+legend('RGB', 'RGB-NN', 'RGBW-NN', 'FontSize', 14, 'Location', 'Best');
+xlabel('Log Mean Illuminance (lux)', 'FontSize', 16);
+ylabel('PSNR', 'FontSize', 16);
+set(gca, 'FontSize', 16);
+set(gca, 'XScale', 'log');
+
+figure;
+% Blue line with circle markers
+plot(lux, ssim_rgb(:), 'color', [0.0000, 0.4470, 0.7410], 'LineWidth', 2, 'LineStyle', '-', 'Marker', 'o', 'MarkerSize', 6); hold on  
+% Red line with square markers
+plot(lux, ssim_rgbnn(:), 'color', [0.8500, 0.3250, 0.0980], 'LineWidth', 2, 'LineStyle', '--', 'Marker', 's', 'MarkerSize', 6);         
+% Green line with diamond markers
+plot(lux, ssim_rgbwNN(:), 'color', [0.4660, 0.6740, 0.1880], 'LineWidth', 2, 'LineStyle', ':', 'Marker', 'd', 'MarkerSize', 6);       
+
+legend('RGB', 'RGB-NN', 'RGBW-NN', 'FontSize', 14, 'Location', 'Best');
+xlabel('Log Mean Illuminance (lux)', 'FontSize', 16);
+ylabel('SSIM', 'FontSize', 16);
+set(gca, 'FontSize', 16);
+set(gca, 'XScale', 'log');
+
+%%
+figure;
+
+% Plot for deltaE
+yyaxis left;
+plot(lux, dE_rgb(:), 'color', [0.0000, 0.4470, 0.7410], 'LineWidth', 2, 'LineStyle', '-', 'Marker', 'o', 'MarkerSize', 6); hold on  
+plot(lux, dE_rgbnn(:), 'color', [0.8500, 0.3250, 0.0980], 'LineWidth', 2, 'LineStyle', '--', 'Marker', 's', 'MarkerSize', 6);         
+plot(lux, dE_rgbwNN(:), 'color', [0.4660, 0.6740, 0.1880], 'LineWidth', 2, 'LineStyle', ':', 'Marker', 'd', 'MarkerSize', 6);       
+ylabel('deltaE', 'FontSize', 16);
+
+figure;
+% Plot for SSIM
+yyaxis right;
+plot(lux, ssim_rgb(:), 'color', [0.0000, 0.4470, 0.7410], 'LineWidth', 2, 'LineStyle', '-', 'Marker', 'o', 'MarkerSize', 6, 'MarkerFaceColor', 'auto'); hold on  
+plot(lux, ssim_rgbnn(:), 'color', [0.8500, 0.3250, 0.0980], 'LineWidth', 2, 'LineStyle', '--', 'Marker', 's', 'MarkerSize', 6, 'MarkerFaceColor', 'auto');         
+plot(lux, ssim_rgbwNN(:), 'color', [0.4660, 0.6740, 0.1880], 'LineWidth', 2, 'LineStyle', ':', 'Marker', 'd', 'MarkerSize', 6, 'MarkerFaceColor', 'auto');       
+ylabel('SSIM', 'FontSize', 16);
+
+% Common x-axis and legend
+xlabel('Log Mean Illuminance (lux)', 'FontSize', 16);
+legend('RGB - deltaE', 'RGB-NN - deltaE', 'RGBW-NN - deltaE', 'RGB - SSIM', 'RGB-NN - SSIM', 'RGBW-NN - SSIM', 'FontSize', 14, 'Location', 'Best');
+set(gca, 'FontSize', 16);
+set(gca, 'XScale', 'log');
