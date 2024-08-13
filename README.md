@@ -21,11 +21,11 @@ The scripts in this repository utilize HDR driving scenes to simulate the respon
 
 A second contribution is a set of scenes that are rendered into light groups (see the paper for details).  A light group can be create an ISETCam scene spectral radiance, either for day, dusk or night conditions. To browse an overview of the light groups we use fiftyone.  It can be pip installed and then run this way
    
-   pip install fiftyone
+   * pip install fiftyone
    
 And then this command will bring up a viewer to see what is in the scenes
    
-   fiftyone app connect --destination mux.stanford.edu
+   * fiftyone app connect --destination mux.stanford.edu
 
 (August, 2024:  We are still working out the privileges of the program and mux.stanford.edu to enable secure access for viewing the data.)
 
