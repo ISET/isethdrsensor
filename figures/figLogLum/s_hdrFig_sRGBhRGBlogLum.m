@@ -5,9 +5,12 @@
 % compares an sRGB, HDR, and pseudocolor rendering of the original scene
 % image.
 %
-% This script requires imageID '1113094429'.  How do we make it
-% available?
+% This script requires the lightgroup
+%    imageID '1113094429'.  
+% 
+% We will put the HDR-scenes-1113094429 into the SDR
 %
+% See Also
 %
 
 ieInit;
@@ -27,7 +30,7 @@ imageID = '1113094429';
 lgt = {'headlights','streetlights','otherlights','skymap'};
 
 % Cropped and denoised light group scenes
-fname = fullfile(isethdrsensorRootPath,'local',sprintf('HDR-scenes-%s',imageID));
+fname = fullfile(isethdrsensorRootPath,'data',sprintf('HDR-scenes-%s',imageID));
 load(fname,'scenes');
 
 %% Set the dynamic range and the level of the dark region (cd/m2 = nits)
@@ -39,6 +42,7 @@ scene = sceneSet(scene,'fov',20);   % I cropped the big scene down.
 sceneWindow(scene);
 
 %% Sequence of images
+
 scene = sceneSet(scene,'render flag','rgb');
 sRGB = sceneGet(scene,'srgb');
 sceneSet(scene,'render flag','hdr');

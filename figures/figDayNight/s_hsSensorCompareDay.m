@@ -1,12 +1,15 @@
-%% Analyzing the OVT 3-capture sensor (Night)
+%% Analyzing the OVT 3-capture sensor (Day)
+%
+% We compare the rendering of a nighttime HDR scene with a standard
+% automotive RGB sensor and a similar sensor, but with the split pixel
+% design, as proposed by Omnivision.
 %
 % For the split pixel, we compare the pure LPD-LCG rendering with the
 % rendering we get when we use the LPD-HCG and SPD-LCG.
 %
-% We write out the IP images.
-% 
-% We also compare the resolution and noise along a line through the
-% headlights. 
+% We write out the sensor images, and we also compare the noise along
+% a couple of lines by plotting the response and plotting the
+% simulation noise free.
 %
 % We also calculate the variance explained (R squared) of the noise
 % free and the noisy, to illustrate that the split pixel design does
@@ -26,6 +29,7 @@
 % To see how we created oiDay and oiNight, see the end of this script,
 % or the end of s_hsSensorCompare.
 %
+
 %%
 ieInit;
 
@@ -35,9 +39,9 @@ imageID = '1114091636';   % Red car, green car.
 % An option for some other time.
 % imageID = '1112201236'; % - Good one
 
-oiName = fullfile(isethdrsensorRootPath,'local',sprintf('oiNight-%s.mat',imageID));
-load(oiName,'oiNight');
-oiInput = oiNight;
+oiName = fullfile(isethdrsensorRootPath,'local',sprintf('oiDay-%s.mat',imageID));
+load(oiName,'oiDay');
+oiInput = oiDay;
 
 %% Create the optics
 [oi,wvf] = oiCreate('wvf');
@@ -60,22 +64,11 @@ aperture = wvfAperture(wvf,params);
 % Slight defocus.  Just a choice.
 oi = oiSet(oi,'wvf zcoeffs',0.1,'defocus');   
 
-%% Run a standard RGB sensor
-
-% 626 row is bottom two lights  150 - 600
-% 586 row is next lights up 250 900
-% 551 row the distant cars - 1000 1200
-% 296 row one of the upper lights  - 600 800
-% 859 row, through the two white lines
-% 142; % An interesting one, also
-
-% 16e-3 is 60 h frame rate.  Used for all the captures below.
-expTime   = 16e-3;   
-whichLine = 626;   % Through the headlights
-satLevel  = .99;
-
 %% Simulate the Omnivision (OVT) Split pixel technology.
 
+% LPD is saturated at half a millisecond
+expTime = 0.5e-3;   
+satLevel = .95;
 pixelSize = [3 3]*1e-6;
 sensorSize = [1082 1926];
 
@@ -92,87 +85,46 @@ sensorArray = sensorCreateArray('array type',arrayType,...
     'method','saturated', ...
     'saturated',satLevel);
 
-%% Base vs Combined signals
-
-% Base sensor
-sensorLPD = sensorArraySplit(1);
-uDataLPD  = sensorPlot(sensorLPD,'volts hline',[1 whichLine],'no fig',true);
-
-% Now the combined
-uDataSplit = sensorPlot(sensorSplit,'volts hline',[1 whichLine],'no fig',true);
-
-ieNewGraphWin;
-plot(uDataLPD.pos{1},uDataLPD.data{1},'k-','LineWidth',2);
-hold on;
-plot(uDataSplit.pos{1},uDataSplit.data{1},'b:','LineWidth',2);
-grid on;
-xlabel('Position (um)'); ylabel('Relative volts');
-title('3-capture (OVT)'); 
-set(gca,'yscale','log');
-
-tmp = sprintf('split-%d-noise.pdf',whichLine);
-exportgraphics(gcf,fullfile(isethdrsensorRootPath,'local',tmp));
-
 %% Image process the RGB and split pixel
-
-% The gamma value impacts the rendering quite a bit.
-% The curves tell the story.
 
 ipLPD = ipCreate;
 sensorLPD = sensorArraySplit(1);
 ipLPD = ipCompute(ipLPD,sensorLPD,'hdr white',true);
-ipWindow(ipLPD,'render flag','rgb','gamma',0.25);
+ipWindow(ipLPD,'render flag','rgb','gamma',0.5);
 
 ipLPD2 = ipCreate;
 sensorLPD2 = sensorArraySplit(2);
 ipLPD2 = ipCompute(ipLPD2,sensorLPD2,'hdr white',true);
-ipWindow(ipLPD2,'render flag','rgb','gamma',0.25);
+ipWindow(ipLPD2,'render flag','rgb','gamma',0.5);
 
 ipSPD = ipCreate;
 sensorSPD = sensorArraySplit(3);
 ipSPD = ipCompute(ipSPD,sensorSPD,'hdr white',true);
-ipWindow(ipSPD,'render flag','rgb','gamma',0.25);
+ipWindow(ipSPD,'render flag','rgb','gamma',0.5);
 
-% This one looks better either clipped or rendered with a very small
-% (0.15) gamma.
 ipSplit = ipCreate;
 ipSplit = ipCompute(ipSplit,sensorSplit,'hdr white',true);
-ipWindow(ipSplit,'render flag','rgb','gamma',0.25);
+ipWindow(ipSplit,'render flag','rgb','gamma',0.5);
 
-%%  Write out the IP images
+%%
 
 rgb = ipGet(ipSplit,'srgb');
-fname = fullfile(isethdrsensorRootPath,'local','night-split.png');
+fname = fullfile(isethdrsensorRootPath,'local','day-split.png');
 imwrite(rgb,fname);
 
 rgb = ipGet(ipLPD,'srgb');
-fname = fullfile(isethdrsensorRootPath,'local','night-lpd.png');
+fname = fullfile(isethdrsensorRootPath,'local','day-lpd.png');
 imwrite(rgb,fname);
 
 rgb = ipGet(ipLPD2,'srgb');
-fname = fullfile(isethdrsensorRootPath,'local','night-lpd2.png');
+fname = fullfile(isethdrsensorRootPath,'local','day-lpd2.png');
 imwrite(rgb,fname);
 
 rgb = ipGet(ipSPD,'srgb');
-fname = fullfile(isethdrsensorRootPath,'local','night-spd.png');
+fname = fullfile(isethdrsensorRootPath,'local','day-spd.png');
 imwrite(rgb,fname);
 
-%% Extra
-%
-% How we created the oi, but also a lot of old no longer used code
 
-%%  This is how we created oiDay
-
-%{
-imageID = '1114091636';   % Red car, green car.  
-wgts = [0    0     0    100*0.5175]; % Day
-scene = hsSceneCreate(imageID,'weights',wgts,'denoise',true);
-oiDay = oiCompute(oi, scene,'aperture',aperture,'crop',true,'pixel size',3e-6);
-oiWindow(oiDay,'gamma',0.5,'render flag','rgb');
-
-oiName = fullfile(isethdrsensorRootPath,'local',sprintf('oiDay-%s.mat',imageID));
-save(oiName,'oiDay','-v7.3');
-%}
 
 %% This is how we created oiNight
 
@@ -213,44 +165,31 @@ ieNewGraphWin; imagesc(~saturated(:,:,1) .* saturated(:,:,2)); axis image; title
 ieNewGraphWin; imagesc(saturated(:,:,2)); axis image; title('Image 2 saturated'); 
 %}
 
+%% END
 
-%% Turn off the noise to compare
-%{
-sensorArrayNN = sensorCreateArray('array type',arrayType,...
-    'pixel size same fill factor',pixelSize,...
-    'exp time',expTime, ...
-    'size',sensorSize, ...
-    'quantizationmethod','analog', ...
-    'noise flag',0);
-
-[sensorSplitNN, sensorArraySplitNN] = sensorComputeArray(sensorArrayNN,oiInput,...
-    'method','saturated', ...
-    'saturated',satLevel);
-
-%}
-
-%% Older regression calculations
 
 %{
-% sensorLPDNN = sensorArraySplitNN(1);
-% uDataLPDNN = sensorPlot(sensorLPDNN,'volts hline',[1 whichLine],'no fig',true);
+%% Without noise
+
+sensorLPD2 = sensorSet(sensorLPD,'noise flag',0);
+sensorLPD2 = sensorCompute(sensorLPD2,oiInput);
+uDataRGB2 = sensorPlot(sensorLPD2,'volts hline',[1 whichLine],'no fig',true);
 
 % The red channel, compared
-% channel = 1;
-% x = uDataLPD.data{channel};
-% y = uDataLPDNN.data{channel};
-% s  = mean(x,'all','omitnan');
-% s2 = mean(y,'all','omitnan');
-% peak = 0.98/max(x);
+channel = 1;
+x = uDataRGB.data{channel};
+y = uDataRGB2.data{channel};
+s  = mean(x,'all','omitnan');
+s2 = mean(y,'all','omitnan');
+peak = 0.98/max(x);
 
 ieNewGraphWin; 
-plot(uDataLPD.pos{1},uDataLPD.data{1},'k-','LineWidth',2);
+plot(uDataRGB.pos{1},(peak*x),'r-', ...
+    uDataRGB2.pos{1},(peak*y)*(s/s2),'k-','LineWidth',2);
 grid on;
 xlabel('Position (um)')
 ylabel('Relative volts');
 title('1-capture (LPD-LCG)');
-set(gca,'yscale','log');
-
 tmp = sprintf('LPD-%d-noise.pdf',whichLine);
 exportgraphics(gcf,fullfile(isethdrsensorRootPath,'local',tmp));
 
@@ -258,34 +197,81 @@ exportgraphics(gcf,fullfile(isethdrsensorRootPath,'local',tmp));
 X = [ones(length(x), 1), x];  % Add a column of ones for the intercept
 [b,~,~,~,stats] = regress(y, X);
 fprintf('LPD-HCG R_squared" %f\n',stats(1));
+
+%% The full 3-capture
+
+% sensorArray(3) = sensorSet(sensorArray(3),'pixel fill factor',1);
+
+[sensorSplit,sensorArraySplit] = sensorComputeArray(sensorArray,oiInput,...
+    'method','saturated', ...
+    'saturated',satLevel);
+%{
+% Check that it is OK.
+ip = ipCreate; 
+ip = ipCompute(ip,sensorSplit,'hdr white',true); ipWindow(ip,'gamma',0.7);
+ip = ipCompute(ip,sensorArraySplit(1),'hdr white',true); ipWindow(ip,'gamma',0.7); 
+ip = ipCompute(ip,sensorArraySplit(3),'hdr white',true); ipWindow(ip,'gamma',0.7); 
 %}
 
+% sensorWindow(sensorSplit,'gamma',0.7);
+
+% We probably need to reset gamma to 1 before these sensorGet calls
+rgb = sensorGet(sensorSplit,'rgb');
+
+imName = sprintf('splitSensor.png');
+imwrite(rgb,fullfile(isethdrsensorRootPath,'local',imName));
+
+%{ 
+sensorShowImage(sensorSplit,sensorGet(sensorSplit,'gamma'),true,ieNewGraphWin);
+truesize
+%}
+
+%% Turn off the noise and compare
+
+sensorArray = sensorCreateArray('array type',arrayType,...
+    'pixel size same fill factor',pixelSize,...
+    'exp time',expTime, ...
+    'size',sensorSize, ...
+    'quantizationmethod','analog', ...
+    'noise flag',0);
+
+[sensorSplit2, sensorArraySplit2] = sensorComputeArray(sensorArray,oiInput,...
+    'method','saturated', ...
+    'saturated',satLevel);
+
+%%
+uDataRGB = sensorPlot(sensorSplit,'volts hline',[1 whichLine],'no fig',true);
+uDataRGB2 = sensorPlot(sensorSplit2,'volts hline',[1 whichLine],'no fig',true);
+
+% The two sensor data sets need to be scaled because of the brittle
+% way we scale the volts in the returned sensorSplit.  It is very
+% sensitive to the presence of noise.  We also scale so that the
+% largest voltage in the noise free is 0.98 volts
+
+channel = 1;
+x = uDataRGB.data{channel};
+y = uDataRGB2.data{channel};
+s  = mean(x,'all','omitnan');
+s2 = mean(y,'all','omitnan');
+peak = 0.98/max(x);
+
+ieNewGraphWin;
+plot(uDataRGB.pos{1},(peak*x),'r-', ...
+    uDataRGB2.pos{1},(peak*y)*(s/s2),'k-','LineWidth',2);
+grid on;
+xlabel('Position (um)')
+ylabel('Relative volts');
+title('3-capture (OVT)');
+tmp = sprintf('split-%d-noise.pdf',whichLine);
+exportgraphics(gcf,fullfile(isethdrsensorRootPath,'local',tmp));
+
 % Assuming x and y are your data vectors
-% X = [ones(length(x), 1), x];  % Add a column of ones for the intercept
-% [b,~,~,~,stats] = regress(y, X);
-% fprintf('Split R_squared" %f\n',stats(1));
+X = [ones(length(x), 1), x];  % Add a column of ones for the intercept
+[b,~,~,~,stats] = regress(y, X);
+fprintf('Split R_squared" %f\n',stats(1));
+
 
 % slope = b(2)
 % intercept = b(1)
 
-%%
-%{
-%% The noise and the improved spatial representation near the headlights
-
-uSplit = ipPlot(ipSplit,'horizontal line luminance',[1 626],'no figure');
-uLPD   = ipPlot(ipLPD,'horizontal line luminance',[1 626],'no figure');
-
-ieNewGraphWin([],'wide');
-plot(uSplit.pos,ieScale(uSplit.data,1),'k-',...
-    uLPD.pos,ieScale(uLPD.data,1),'ko:','LineWidth',2);
-legend({'3-capture OVT','LPD-LCG'});
-grid on; set(gca,'xlim',[150 600]); 
-xlabel('Column'); ylabel('Relative luminance');
-
-tmp = sprintf('split-LPD-luminance.pdf');
-exportgraphics(gcf,fullfile(isethdrsensorRootPath,'local',tmp));
-
-
 %}
-%% END
-
