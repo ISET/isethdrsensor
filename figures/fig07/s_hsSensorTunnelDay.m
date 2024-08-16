@@ -23,16 +23,12 @@
 
 %%
 ieInit;
-load('compareDay.mat');
-%% Run a standard RGB sensor
+load('oiTunnel.mat','oiInput');
+%% Set parameters
 
-% 16e-3 is 60 h frame rate.  Used for all the captures below.
-expTime = 1.2*.2e-3;   
-whichLine = 859;
-satLevel = .99;
-pixelFillFactor = 0.1;
-
-% whichLine = 142; % An interesting one, also
+% Long exposure forces saturation of the LPD
+expTime   = 120e-3;   
+satLevel  = .99;
 
 %% Simulate the Omnivision (OVT) Split pixel technology.
 
@@ -50,29 +46,6 @@ sensorArray = sensorCreateArray('array type',arrayType,...
     'exp time',expTime, ...
     'quantizationmethod','analog', ...
     'size',sensorSize);
-sensorArray(3) = sensorSet(sensorArray(3),'pixel fill factor',pixelFillFactor);
-
-%% Use just the LPD-LCG sensor
-
-% Base sensor
-sensorLPD = sensorArray(1);
-sensorLPD = sensorCompute(sensorLPD,oiInput);
-sensorWindow(sensorLPD);
-uDataRGB  = sensorPlot(sensorLPD,'volts hline',[1 whichLine],'no fig',true);
-
-% We probably need to reset gamma to 1 before these sensorGet calls
-rgb = sensorGet(sensorLPD,'rgb');
-
-imName = sprintf('sensorLPD.png');
-imwrite(rgb,fullfile(isethdrsensorRootPath,'local',imName));
-
-%%
-
-% Small photodiode
-sensorSPD = sensorArray(3);
-sensorSPD = sensorCompute(sensorSPD,oiInput);
-sensorWindow(sensorSPD);
-
 
 %% The full 3-capture
 
@@ -82,51 +55,53 @@ sensorWindow(sensorSPD);
     'method','saturated', ...
      'saturated',satLevel);
 
-sensorWindow(sensorSplit,'gamma',0.7);
-
-% We probably need to reset gamma to 1 before these sensorGet calls
-rgb = sensorGet(sensorSplit,'rgb');
-
-imName = sprintf('splitSensor.png');
-imwrite(rgb,fullfile(isethdrsensorRootPath,'local',imName));
-
 %% Image process the RGB and split pixel
 
 ipLPD = ipCreate;
-ipLPD = ipCompute(ipLPD,sensorLPD,'hdr white',false);
-ipWindow(ipLPD,'render flag','rgb','gamma',0.5);
+ipLPD = ipCompute(ipLPD,sensorArraySplit(1),'hdr white',true);
+ipWindow(ipLPD,'render flag','rgb','gamma',0.3);
+
+%{
 rgb = ipGet(ipLPD,'srgb');
 fname = fullfile(isethdrsensorRootPath,'local','ip-LPD.png');
 imwrite(rgb,fname);
+%}
 
 ipSPD = ipCreate;
-ipSPD = ipCompute(ipSPD,sensorSPD,'hdr white',false);
-ipWindow(ipSPD,'render flag','rgb','gamma',0.5);
+ipSPD = ipCompute(ipSPD,sensorArraySplit(3),'hdr white',true);
+ipWindow(ipSPD,'render flag','rgb','gamma',0.3);
 
 ipSplit = ipCreate;
-ipSplit = ipCompute(ipSplit,sensorSplit,'hdr white',false);
-ipWindow(ipSplit,'render flag','rgb','gamma',0.5);
+ipSplit = ipCompute(ipSplit,sensorSplit,'hdr white',true);
+ipWindow(ipSplit,'render flag','rgb','gamma',0.3);
 
-%%
+%{
 rgb = ipGet(ipSplit,'srgb');
 fname = fullfile(isethdrsensorRootPath,'local','ip-split.png');
 imwrite(rgb,fname);
+%}
 
 %% Show the improved spatial representation near the headlights
 
-uSplit = ipPlot(ipSplit,'horizontal line luminance',[1 626],'no figure');
-uLPD   = ipPlot(ipLPD,'horizontal line luminance',[1 626],'no figure');
+lineNumber = 479;
+uSplit = ipPlot(ipSplit,'horizontal line luminance',[1 lineNumber],'no figure');
+uLPD   = ipPlot(ipLPD,'horizontal line luminance',[1 lineNumber],'no figure');
 
-ieNewGraphWin([],'wide');
-plot(uSplit.pos,ieScale(uSplit.data,1),'k-',...
-    uLPD.pos,ieScale(uLPD.data,1),'ko:','LineWidth',2);
+ieNewGraphWin;
+p = plot(uSplit.pos,uSplit.data,'Color',[0 0.5 1],'LineWidth',2); 
+hold on;
+plot(uLPD.pos,uLPD.data,'r-','LineWidth',2);
 legend({'3-capture OVT','LPD-LCG'});
-grid on; set(gca,'xlim',[150 600]); 
+grid on; 
 xlabel('Column'); ylabel('Relative luminance');
+set(gca,'yscale','log'); grid on
 
+%% If you would like to save a PDF, do this
+
+%{
 tmp = sprintf('split-LPD-luminance.pdf');
 exportgraphics(gcf,fullfile(isethdrsensorRootPath,'local',tmp));
-
+%}
 
 %% END
 

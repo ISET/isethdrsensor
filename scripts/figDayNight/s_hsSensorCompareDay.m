@@ -39,7 +39,7 @@ imageID = '1114091636';   % Red car, green car.
 % An option for some other time.
 % imageID = '1112201236'; % - Good one
 
-oiName = fullfile(isethdrsensorRootPath,'local',sprintf('oiDay-%s.mat',imageID));
+oiName = fullfile(isethdrsensorRootPath,'data',sprintf('oiDay-%s.mat',imageID));
 load(oiName,'oiDay');
 oiInput = oiDay;
 
@@ -62,7 +62,7 @@ params.linewidth = 2;
 aperture = wvfAperture(wvf,params);
 
 % Slight defocus.  Just a choice.
-oi = oiSet(oi,'wvf zcoeffs',0.1,'defocus');   
+oi = oiSet(oi,'wvf zcoeffs',0,'defocus');   
 
 %% Simulate the Omnivision (OVT) Split pixel technology.
 
@@ -108,6 +108,7 @@ ipWindow(ipSplit,'render flag','rgb','gamma',0.5);
 
 %%
 
+%{
 rgb = ipGet(ipSplit,'srgb');
 fname = fullfile(isethdrsensorRootPath,'local','day-split.png');
 imwrite(rgb,fname);
@@ -123,22 +124,7 @@ imwrite(rgb,fname);
 rgb = ipGet(ipSPD,'srgb');
 fname = fullfile(isethdrsensorRootPath,'local','day-spd.png');
 imwrite(rgb,fname);
-
-
-
-%% This is how we created oiNight
-
-%{
-imageID = '1114091636';   % Red car, green car.  
-wgts    = [0.2306    0.0012    0.0001    1e-2*0.5175]; % Night
-scene   = hsSceneCreate(imageID,'weights',wgts,'denoise',true);
-oiNight = oiCompute(oi, scene,'aperture',aperture,'crop',true,'pixel size',3e-6);
-oiWindow(oiNight,'render flag','rgb','gamma',0.2);
-
-oiName = fullfile(isethdrsensorRootPath,'local',sprintf('oiNight-%s.mat',imageID));
-save(oiName,'oiNight','-v7.3');
 %}
-
 
 %% Some potential graphs
 %{
@@ -168,110 +154,3 @@ ieNewGraphWin; imagesc(saturated(:,:,2)); axis image; title('Image 2 saturated')
 %% END
 
 
-%{
-%% Without noise
-
-sensorLPD2 = sensorSet(sensorLPD,'noise flag',0);
-sensorLPD2 = sensorCompute(sensorLPD2,oiInput);
-uDataRGB2 = sensorPlot(sensorLPD2,'volts hline',[1 whichLine],'no fig',true);
-
-% The red channel, compared
-channel = 1;
-x = uDataRGB.data{channel};
-y = uDataRGB2.data{channel};
-s  = mean(x,'all','omitnan');
-s2 = mean(y,'all','omitnan');
-peak = 0.98/max(x);
-
-ieNewGraphWin; 
-plot(uDataRGB.pos{1},(peak*x),'r-', ...
-    uDataRGB2.pos{1},(peak*y)*(s/s2),'k-','LineWidth',2);
-grid on;
-xlabel('Position (um)')
-ylabel('Relative volts');
-title('1-capture (LPD-LCG)');
-tmp = sprintf('LPD-%d-noise.pdf',whichLine);
-exportgraphics(gcf,fullfile(isethdrsensorRootPath,'local',tmp));
-
-% Assuming x and y are your data vectors
-X = [ones(length(x), 1), x];  % Add a column of ones for the intercept
-[b,~,~,~,stats] = regress(y, X);
-fprintf('LPD-HCG R_squared" %f\n',stats(1));
-
-%% The full 3-capture
-
-% sensorArray(3) = sensorSet(sensorArray(3),'pixel fill factor',1);
-
-[sensorSplit,sensorArraySplit] = sensorComputeArray(sensorArray,oiInput,...
-    'method','saturated', ...
-    'saturated',satLevel);
-%{
-% Check that it is OK.
-ip = ipCreate; 
-ip = ipCompute(ip,sensorSplit,'hdr white',true); ipWindow(ip,'gamma',0.7);
-ip = ipCompute(ip,sensorArraySplit(1),'hdr white',true); ipWindow(ip,'gamma',0.7); 
-ip = ipCompute(ip,sensorArraySplit(3),'hdr white',true); ipWindow(ip,'gamma',0.7); 
-%}
-
-% sensorWindow(sensorSplit,'gamma',0.7);
-
-% We probably need to reset gamma to 1 before these sensorGet calls
-rgb = sensorGet(sensorSplit,'rgb');
-
-imName = sprintf('splitSensor.png');
-imwrite(rgb,fullfile(isethdrsensorRootPath,'local',imName));
-
-%{ 
-sensorShowImage(sensorSplit,sensorGet(sensorSplit,'gamma'),true,ieNewGraphWin);
-truesize
-%}
-
-%% Turn off the noise and compare
-
-sensorArray = sensorCreateArray('array type',arrayType,...
-    'pixel size same fill factor',pixelSize,...
-    'exp time',expTime, ...
-    'size',sensorSize, ...
-    'quantizationmethod','analog', ...
-    'noise flag',0);
-
-[sensorSplit2, sensorArraySplit2] = sensorComputeArray(sensorArray,oiInput,...
-    'method','saturated', ...
-    'saturated',satLevel);
-
-%%
-uDataRGB = sensorPlot(sensorSplit,'volts hline',[1 whichLine],'no fig',true);
-uDataRGB2 = sensorPlot(sensorSplit2,'volts hline',[1 whichLine],'no fig',true);
-
-% The two sensor data sets need to be scaled because of the brittle
-% way we scale the volts in the returned sensorSplit.  It is very
-% sensitive to the presence of noise.  We also scale so that the
-% largest voltage in the noise free is 0.98 volts
-
-channel = 1;
-x = uDataRGB.data{channel};
-y = uDataRGB2.data{channel};
-s  = mean(x,'all','omitnan');
-s2 = mean(y,'all','omitnan');
-peak = 0.98/max(x);
-
-ieNewGraphWin;
-plot(uDataRGB.pos{1},(peak*x),'r-', ...
-    uDataRGB2.pos{1},(peak*y)*(s/s2),'k-','LineWidth',2);
-grid on;
-xlabel('Position (um)')
-ylabel('Relative volts');
-title('3-capture (OVT)');
-tmp = sprintf('split-%d-noise.pdf',whichLine);
-exportgraphics(gcf,fullfile(isethdrsensorRootPath,'local',tmp));
-
-% Assuming x and y are your data vectors
-X = [ones(length(x), 1), x];  % Add a column of ones for the intercept
-[b,~,~,~,stats] = regress(y, X);
-fprintf('Split R_squared" %f\n',stats(1));
-
-
-% slope = b(2)
-% intercept = b(1)
-
-%}

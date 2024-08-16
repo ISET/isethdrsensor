@@ -32,7 +32,34 @@ wvf = wvfSet(wvf, 'spatial samples',512);
 oi = oiCompute(oi, thisScene,'aperture',aperture,'crop',true,'pixel size',3e-6);
 
 %%
-sensorRGB = sensorCreate('ar0132at',[],'rgb');
+expTime = 342e-3;   
+satLevel = .95;
+pixelSize = [3 3]*1e-6;
+sensorSize = [1082 1926];
+
+arrayType = 'ovt'; 
+
+% The OVT design is a 3-capture (two large PD captures and one small PD).
+sensorArray = sensorCreateArray('array type',arrayType,...
+    'pixel size same fill factor',pixelSize,...
+    'exp time',expTime, ...
+    'quantizationmethod','analog', ...
+    'size',sensorSize);
+
+[sensorSplit,sensorArraySplit] = sensorComputeArray(sensorArray,oi,...
+    'method','saturated', ...
+    'saturated',satLevel);
+
+sensorWindow(sensorSplit);
+
+%%
+ip = ipCreate;
+ip = ipCompute(ip,sensorSplit,'hdr white',true);
+ipWindow(ip);
+
+%%
+%{
+sensorRGB = sensorCreateArray('ar0132at',[],'rgb');
 
 sensorRGB = sensorSet(sensorRGB,'match oi',oi);
 ip = ipCreate;
@@ -55,6 +82,7 @@ sensor = sensorCompute(sensorRGB, oi);
 ip = ipCompute(ip,sensor);ipWindow(ip);
 %{
 srgb = ipGet(ip, 'srgb');imwrite(srgb,'~/Desktop/expLong.png');
+%}
 %}
 
 %%
