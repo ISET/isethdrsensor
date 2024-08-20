@@ -5,6 +5,4 @@ data/HDR-scenes-*
 /__pycache__
 *pycache*
 networks/*
-data/oiDay-1114091636.mat
-data/oiNight-1114091636.mat
-data/oiTunnel.mat
+/data
