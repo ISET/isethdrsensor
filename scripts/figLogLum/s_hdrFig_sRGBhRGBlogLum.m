@@ -1,4 +1,17 @@
 %% HDR pseudocolor
+%
+% This is a simple demonstration script that shows how to calculate and
+% render an HDR image with the light groups.  It results in a display that
+% compares an sRGB, HDR, and pseudocolor rendering of the original scene
+% image.
+%
+% This script requires the lightgroup
+%    imageID '1113094429'.  
+% 
+% We will put the HDR-scenes-1113094429 into the SDR
+%
+% See Also
+%
 
 ieInit;
 
@@ -17,7 +30,7 @@ imageID = '1113094429';
 lgt = {'headlights','streetlights','otherlights','skymap'};
 
 % Cropped and denoised light group scenes
-fname = fullfile(isethdrsensorRootPath,'local',sprintf('HDR-scenes-%s',imageID));
+fname = fullfile(isethdrsensorRootPath,'data',sprintf('HDR-scenes-%s',imageID));
 load(fname,'scenes');
 
 %% Set the dynamic range and the level of the dark region (cd/m2 = nits)
@@ -29,6 +42,7 @@ scene = sceneSet(scene,'fov',20);   % I cropped the big scene down.
 sceneWindow(scene);
 
 %% Sequence of images
+
 scene = sceneSet(scene,'render flag','rgb');
 sRGB = sceneGet(scene,'srgb');
 sceneSet(scene,'render flag','hdr');
@@ -41,11 +55,11 @@ logLum = logLum - min(logLum(:));
 ieNewGraphWin([],'wide');
 tiledlayout(1,3)
 nexttile;
-imagesc(sRGB); axis image; axis off;
+imagesc(sRGB); axis image; axis off; subtitle('srgb rendering')
 nexttile;
-imagesc(hRGB); axis image; axis off;
+imagesc(hRGB); axis image; axis off; subtitle('HDR rendering')
 nexttile;
-imagesc(logLum); colormap("parula"); colorbar; axis image; axis off
+imagesc(logLum); colormap("parula"); colorbar; axis image; axis off; subtitle('pseudocolor rendering')
 
 %%
 

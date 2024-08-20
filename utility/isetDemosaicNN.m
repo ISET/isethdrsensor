@@ -1,8 +1,8 @@
-function [result, exrOutput] = isetDemosaicNN(cfa, exrInput, exrOutput)
+function [result, exrOutput] = isetDemosaicNN(networkName, exrInput, exrOutput)
 % isetDemosaicNN - Function to demosaic an image using a neural network.
 %
 % Synopsis:
-%  [result, output_path] = isetDemosaicNN(cfa, input_path, output_path)
+%  [result, output_path] = isetDemosaicNN(networkName, input_path, output_path)
 %
 % Brief:
 %   Requires a Python environment in Matlab and the ONNX files that Zhenyi
@@ -14,10 +14,13 @@ function [result, exrOutput] = isetDemosaicNN(cfa, exrInput, exrOutput)
 %      * NNDemosaicRGB.onnx
 %      * NNDemosaicRGBW.onnx
 %
-%    They should be installed in isethdrsensor/networks/
+%    The onnx files should be placed by the user in
+%    isethdrsensor/networks/. Because they are big, we do not keep
+%    them in the repository.
 %
 % Inputs:
-%   cfa  - 'rgbw' or 'rgb'.  'rgb' NYI
+%   networkName  - Name of the trained network.  ar0132at-rgbw or
+%                  ar0132at-rgb as of July, 2024.
 %   exrInput  - String, path to the input image to be demosaiced.
 %   exrOutput - String, path to save the demosaiced output image.
 %
@@ -37,7 +40,7 @@ function [result, exrOutput] = isetDemosaicNN(cfa, exrInput, exrOutput)
 %   For instructions on how to do this, see the s_python script.
 %
 % See also
-%   s_python, s_hsensorRGB
+%   s_python, s_hsSensorRGBW, ipCompute
 
 
 %%
@@ -53,17 +56,20 @@ end
 % Import the Python module for demosaicing
 NNDemosaic = py.importlib.import_module('Demosaic_restormer');
 NNDemosaic = py.importlib.reload(NNDemosaic);
-% Determine the path to the appropriate model based on CFA (Color Filter Array)
-switch cfa
-    case 'rgb'
+
+% Determine the path to the appropriate model based on CFA (Color
+% Filter Array).  The name space can get larger over time, in
+% principle.
+switch networkName
+    case 'ar0132at-rgb'
         % Path to the RGB demosaicing model
         model_path = fullfile(isethdrsensorRootPath, 'networks', 'NNDemosaicRGB.onnx');
-    case 'rgbw'
+    case 'ar0132at-rgbw'
         % Path to the RGBW demosaicing model
         model_path = fullfile(isethdrsensorRootPath, 'networks', 'NNDemosaicRGBW.onnx');
     otherwise
         % Error for unsupported CFA types
-        error('CFA has to be RGB or RGBW');
+        error('Trained network name not known:  %s',networkName);
 end
 
 % Call the Python function for demosaicing

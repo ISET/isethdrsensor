@@ -1,7 +1,15 @@
-%% Script to download a light group
+%% Script to download all the light groups on acorn to isethdrsensor/data
+%
+% The light group data are stored on orange as EXR files in two
+% places.  One is the metadata:
+%
+%  metaFolder = '/acorn/data/iset/isetauto/Ford/SceneMetadata';
+%
+% The files in the metaFolder specify where the light group EXR files
+% are stored on orange.
 %
 % If the directory for the lightgroup already exists in your
-% isethdrsensor/data directory, the download will be skipped.
+% isethdrsensor/data directory, the download is skipped.
 %
 % The light group will be downloaded into your local directory
 %
@@ -43,25 +51,8 @@ for ss = 1:numel(lst)
         fprintf('Scene %s already downloaded\n',imageID);
     else
         fprintf('Downloading %s ...',imageID);
+        hsDownloadLightGroup(imageID,user,host);
         mkdir(destPath);
-
-        % Read the metadata file.  This is saved.  It contains a depth
-        % map and an instance map and an objectslist
-        metaFolder = '/acorn/data/iset/isetauto/Ford/SceneMetadata';
-        src  = fullfile(metaFolder,[imageID,'.mat']);
-        ieSCP(user,host,src,destPath);
-        load(fullfile(destPath,[imageID,'.mat']),'sceneMeta');
-
-        % Use the metadata information to locate and then copy the
-        % radiance EXR files in the light group to the destination 
-        for ll = 1:numel(lgt)
-            thisFile = sprintf('%s_%s.exr',imageID,lgt{ll});
-            srcFile  = fullfile(sceneMeta.datasetFolder,thisFile);
-            destFile = fullfile(destPath,thisFile);
-            ieSCP(user,host,srcFile,destFile);
-        end
-
-        fprintf('Done.\n');
     end
 end
 

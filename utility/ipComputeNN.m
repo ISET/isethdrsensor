@@ -1,8 +1,8 @@
 function ip = ipComputeNN(inputSensor, type, ipEXR)
-% ipComputeNN Computes the image processing pipeline using a neural network for demosaicing.
+% Computes the image processing pipeline using a neural network for demosaicing.
 %
 % Syntax:
-%   ip = ipComputeNN(sensor, type)
+%   ip = ipComputeNN(sensor, type, ipEXR)
 %
 % Description:
 %   This function performs image processing on the input sensor data using a neural network
@@ -10,11 +10,11 @@ function ip = ipComputeNN(inputSensor, type, ipEXR)
 %   transforms, and returns the final image processing structure.
 %
 % Inputs:
-%   sensor - The sensor data structure containing image information.
+%   sensor - ISET sensor data structure containing image information.
 %   type   - The type of neural network to use for demosaicing.
 %
 % Outputs:
-%   ip     - The final image processing structure after applying the neural network demosaicing
+%   ip     - ISET image processing structure after applying the neural network demosaicing
 %            and other necessary transformations.
 %
 % Example:
@@ -43,16 +43,21 @@ if notDefined('ipEXR')
     fname = sprintf('%02dH%02dS-%s-%.2f.exr', uint8(HH), uint8(mm), type, sensorGet(inputSensor, 'exp time', 'ms'));
 
     % Save the sensor data as an EXR file
-    fname = sensor2EXR(inputSensor, fullfile(exrDir, fname));
+    [fname, ~, data_max] = sensor2EXR(inputSensor, fullfile(exrDir, fname));
+    % run network on server
+    % return;
 
     % Split the file path into parts
     [p, n, ext] = fileparts(fname);
     ipEXR = sprintf('%s-ip%s', fullfile(p, n), ext);
     % Define the output EXR filename for the demosaiced image
-    return;
+    
     disp('INFO: Demosaicing started ...')
     % Perform neural network-based demosaicing
     isetDemosaicNN(type, fname, ipEXR);
+else
+    data = sensorGet(inputSensor,'volts');
+    data_max = max(data(:));
 end
 
 
@@ -73,7 +78,7 @@ ip = ipSet(ip, 'transform method', 'current');
 
 % Read the demosaiced image from the EXR file
 img = exrread(ipEXR);
-
+img = img * data_max/0.95;
 % Set the sensor space image in the image processing structure
 ip = ipSet(ip, 'sensor space', img);
 

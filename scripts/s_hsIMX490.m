@@ -1,8 +1,8 @@
 %% s_hsIMX490
 % 
-% Not up to date.  But useful to start the split pixel simulation for
-% the paper.
+% Not up to date.  
 %
+% Look at s_hsSensorCompare.  Then update this.
 %
 
 %%

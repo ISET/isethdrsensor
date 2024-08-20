@@ -1,9 +1,11 @@
 %% Create HDR scene from light groups
 %
-% Use the script s_downloadLightGroup to get more light group scenes
-% on your local computer.
+% Use the script s_downloadLightGroup to get more light group EXR
+% files on your local computer. The specifications of the light group
+% EXR files on orange is based on a numeric string, we call the
+% imageID. The data is stored there in two places.  The
 %
-% Then convert them to the four scenes and the metadata using this
+% This script converts them to the four scenes and the metadata using this
 % script. The scenes are also stored in isethdrsensor/data
 %
 % To create a specific scene use s_hsSceneCreate
