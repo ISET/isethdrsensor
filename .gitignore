@@ -5,3 +5,4 @@ data/HDR-scenes-*
 /__pycache__
 *pycache*
 networks/*
+/data
