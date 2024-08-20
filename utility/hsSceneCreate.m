@@ -67,7 +67,7 @@ else
         destPath = fullfile(isethdrsensorRootPath,'data',imageID);
         load(fullfile(destPath,[imageID,'.mat']),'sceneMeta');
     catch
-        error('Light group ID %s not found.\n',imageID);
+        error('Light group ID %s not found in isethdrsensor/data.\n',imageID);
     end
 end
 
