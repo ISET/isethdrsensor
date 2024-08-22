@@ -17,6 +17,12 @@
 % See also
 %   s_hsSceneCreate
 
+%{
+user='wandell';
+host = 'orange.stanford.edu';
+imageID = '1112201236'; % - Good one
+hsDownloadLightGroup(imageID,user,host);
+%}
 %%  These are all the scenes BW processed.
 % We need a different version of this, probably through Andrew's database.
 %
@@ -24,6 +30,7 @@
 
 %%
 ieInit;
+imageID = '1112201236'; % - Good one
 
 %% Create the optics
 [oi,wvf] = oiCreate('wvf');
@@ -44,8 +51,6 @@ params.linewidth = 2;
 
 aperture = wvfAperture(wvf,params);
 oi = oiSet(oi,'wvf zcoeffs',0,'defocus');
-
-imageID = '1112201236'; % - Good one
 
 %% First scene
 

@@ -35,7 +35,7 @@ imageID = '1114091636';   % Red car, green car.
 % An option for some other time.
 % imageID = '1112201236'; % - Good one
 
-oiName = fullfile(isethdrsensorRootPath,'local',sprintf('oiNight-%s.mat',imageID));
+oiName = fullfile(isethdrsensorRootPath,'data',sprintf('oiNight-%s.mat',imageID));
 load(oiName,'oiNight');
 oiInput = oiNight;
 

@@ -1,9 +1,12 @@
 %% Exposure duration to illustrate increasing flare
 %
+% Creates image for Figures 5 and 6
 %
 
-
 %%
+ieInit;
+
+%% Load the light groups
 imageID = '1114031438';
 
 lgt = {'headlights','streetlights','otherlights','skymap'};
@@ -18,11 +21,13 @@ end
 disp('Done loading.')
 
 %% Night
+
 wgts_night = [3.0114    0.0378    0.0498    0.0030];
 scene = sceneAdd(scenes, wgts_night);
 thisScene = piAIdenoise(scene);
 
-%%
+%% Create the optics
+
 [oi,wvf] = oiCreate('wvf');
 wvf = wvfSet(wvf, 'spatial samples',512);
 
@@ -31,7 +36,39 @@ wvf = wvfSet(wvf, 'spatial samples',512);
     'line mean',0, 'line sd', 0, 'line opacity',0,'linewidth',2);
 oi = oiCompute(oi, thisScene,'aperture',aperture,'crop',true,'pixel size',3e-6);
 
+%% ON sensor
+
+sensorRGB = sensorCreate('ar0132at',[],'rgb');
+
+sensorRGB = sensorSet(sensorRGB,'match oi',oi);
+ip = ipCreate;
+sensorRGB = sensorSet(sensorRGB,'exp time',0.005);
+sensor = sensorCompute(sensorRGB, oi);
+ip = ipCompute(ip,sensor);
+ipWindow(ip,'gamma',0.5);
+%{
+srgb = ipGet(ip, 'srgb');imwrite(srgb,'~/Desktop/expLow.png');
+%}
+sensorRGB = sensorSet(sensorRGB,'exp time',0.0405);
+sensor = sensorCompute(sensorRGB, oi);
+ip = ipCompute(ip,sensor);
+ipWindow(ip,'gamma',0.5);
+%{
+srgb = ipGet(ip, 'srgb');imwrite(srgb,'~/Desktop/expMid.png');
+%}
+
+sensorRGB = sensorSet(sensorRGB,'exp time',0.3242);
+sensor = sensorCompute(sensorRGB, oi);
+ip = ipCompute(ip,sensor);
+ipWindow(ip,'gamma',0.5);
+%{
+srgb = ipGet(ip, 'srgb');imwrite(srgb,'~/Desktop/expLong.png');
+%}
+
 %%
+
+%% Compare with the split pixel in Figure 06
+
 expTime = 342e-3;   
 satLevel = .95;
 pixelSize = [3 3]*1e-6;
@@ -50,39 +87,11 @@ sensorArray = sensorCreateArray('array type',arrayType,...
     'method','saturated', ...
     'saturated',satLevel);
 
-sensorWindow(sensorSplit);
+% sensorWindow(sensorSplit);
 
-%%
+%%  Plot the image at true size to see it well.
 ip = ipCreate;
 ip = ipCompute(ip,sensorSplit,'hdr white',true);
 ipWindow(ip);
-
-%%
-%{
-sensorRGB = sensorCreateArray('ar0132at',[],'rgb');
-
-sensorRGB = sensorSet(sensorRGB,'match oi',oi);
-ip = ipCreate;
-sensorRGB = sensorSet(sensorRGB,'exp time',0.005);
-sensor = sensorCompute(sensorRGB, oi);
-ip = ipCompute(ip,sensor);ipWindow(ip);
-%{
-srgb = ipGet(ip, 'srgb');imwrite(srgb,'~/Desktop/expLow.png');
-%}
-sensorRGB = sensorSet(sensorRGB,'exp time',0.0405);
-sensor = sensorCompute(sensorRGB, oi);
-ip = ipCompute(ip,sensor);
-ipWindow(ip);
-%{
-srgb = ipGet(ip, 'srgb');imwrite(srgb,'~/Desktop/expMid.png');
-%}
-
-sensorRGB = sensorSet(sensorRGB,'exp time',0.3242);
-sensor = sensorCompute(sensorRGB, oi);
-ip = ipCompute(ip,sensor);ipWindow(ip);
-%{
-srgb = ipGet(ip, 'srgb');imwrite(srgb,'~/Desktop/expLong.png');
-%}
-%}
 
 %%
