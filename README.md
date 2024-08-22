@@ -8,9 +8,9 @@ This repository contains functions and scripts designed to evaluate High Dynamic
 The code in this repository relies on the following tools:
 
 - [ISETCam](https://github.com/ISET/isetcam): A Matlab toolbox for simulating camera imaging systems.
-- [ISETAuto](https://github.com/ISET/isetauto): A Matlab toolbox for automotive scene generation and analysis.
-- [ISET3d](https://github.com/ISET/iset3d-tiny): A Matlab toolbox for creating and rendering 3D scenes.
-
+```
+git clone https://github.com/ISET/isetcam
+```
 To run the neural network for denoising and demosaicing, you will also need to have a Matlab Python environment.  See the instructions for creating a Python environment on the [ISETCam wiki pages]()
 
 ### Python libraries for RGBW rendering
