@@ -5,7 +5,7 @@
 % Restormer for RGBW.  Adaptive laplacian for RGB.
 %
 % Make sure the user has the Python environment set and has downloaded
-% the networks?
+% the networks, see isetcam/python/s_python.m
 %
 % See also
 %
@@ -133,8 +133,14 @@ ip = ipSet(ip,'demosaic method','Adaptive Laplacian');
 
 % https://stacks.stanford.edu/file/druid:tb259jf5957/ISET_fruit.zip
 filename = 'FruitMCC.mat';
+filePath = which(filename);
+if isempty(filePath)
+    filePath =ieWebGet('resourcetype','isethdrsensor',...
+        'resource name','data/FruitMCC.mat',...
+        'download dir',fullfile(isethdrsensorRootPath));
+end
 % oi = oiFromFile(filename,'multispectral');
-scene = sceneFromFile(filename,'multispectral',[],[],400:10:700);
+scene = sceneFromFile(filePath,'multispectral',[],[],400:10:700);
 oi = piOICreate(sceneGet(scene,'photons'));
 oiWindow(oi);
 

@@ -23,7 +23,14 @@
 
 %%
 ieInit;
-load('oiTunnel.mat','oiInput');
+oiFile = fullfile(isethdrsensorRootPath,'data','oiTunnel.mat');
+if ~exist(oiFile,"file")
+    % download the file from SDR
+    ieWebGet('resourcetype','isethdrsensor',...
+        'resource name','data/oiTunnel.mat',...
+        'download dir',isethdrsensorRootPath);
+end
+load(oiFile,'oiInput');
 %% Set parameters
 
 % Long exposure forces saturation of the LPD

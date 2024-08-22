@@ -16,6 +16,11 @@ scenes = cell(numel(lgt,1));
 for ll = 1:numel(lgt)
     thisFile = sprintf('%s_%s.exr',imageID,lgt{ll});
     destFile = fullfile(destPath,thisFile);
+    if ~exist(destFile,"file")
+        ieWebGet('resourcetype','isethdrsensor',...
+            'resource name',fullfile('data',imageID,thisFile),...
+            'download dir',isethdrsensorRootPath);
+    end
     scenes{ll} = piEXR2ISET(destFile);
 end
 disp('Done loading.')
