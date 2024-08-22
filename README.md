@@ -53,7 +53,7 @@ To run the simulations, ensure that you have the necessary dependencies installe
 The scripts in this repository were used to generate most of the figures in the paper titled "ISETHDR: A Physically Accurate Synthetic Radiance Dataset for High Dynamic Range Driving Scenes," currently in preparation. You can modify the parameters in the scripts to explore different scenarios or reproduce the figures.
 
 ## Data
-The data required for the /figures and /scripts directories is stored in the [Stanford Digital Repository (SDR)]((https://searchworks.stanford.edu/view/bt316kj3589)) Feel free to check it in your web browser.
+The data required for the /figures and /scripts directories is stored in the [Stanford Digital Repository (SDR)](https://searchworks.stanford.edu/view/bt316kj3589) Feel free to check it in your web browser.
 
 The corresponding data from SDR will be automatically pulled for the scripts. A data folder will be created for the scene data, and a networks folder will be created for the pretrained ONNX network used for demosaicing and denoising, as described in the Experiments/RGBW Sensor section of the paper.
 ## Contributing
