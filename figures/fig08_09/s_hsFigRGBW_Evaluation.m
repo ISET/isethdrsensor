@@ -118,10 +118,10 @@ imwrite(rgbImg,'~/Desktop/rgb.png')
 %}
 
 %%  Clear the sensors and reset for the new image size
+ieInit;
+
 initClear = ieSessionGet('init clear');
 ieSessionSet('init clear',true);
-
-ieInit;
 
 sensorRGBW = sensorCreate('ar0132at',[],'rgbw');
 sensorRGB  = sensorCreate('ar0132at',[],'rgb');
@@ -295,7 +295,7 @@ set(gca, 'FontSize', 16);
 set(gca, 'XScale', 'log');
 
 %%
-ieSessionSet('init clear',initClear);
+ieSessionSet('initclear',initClear);
 
 %%
 
