@@ -1,18 +1,24 @@
 %% Illustrates how to use the network demosaic method
 %
-% The demosaic-denoise networks were trained on the ar0132at, both the
-% 'rgbw' and 'rgb' sensor.  The network runs for scenes with a
-% reasonable illumination, but not well on the HDR scenes.
-%
 % To run the neural networks in the demosaicing ONNX files, you must
 % have the Python environment installed on your computer.  See the
 % instructions for installing Conda and connecting it to Matlab in
 % 
 %   s_python
 %
-% The ipCompute command to use these networks is:
+% You must also have the trained restormer network in
+% isethdrsensor/network.  These can be downloaded using ieWebGet. 
+%
+% Finally, this file uses the oiDay-1114091636.mat file, also on the
+% Stanford Digital Repository.
+%
+% The ipCompute command to use these networks, for the RGBW case, is
 %
 %   ipCompute(ip,sensorRGBW,'neural network','ar0132at-rgbw');
+%
+% The demosaic-denoise networks were trained on the ar0132at, both the
+% 'rgbw' and 'rgb' sensor.  The network runs for scenes with a
+% reasonable illumination, but not well on the HDR scenes.
 %
 % See also
 %

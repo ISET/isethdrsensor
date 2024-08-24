@@ -1,14 +1,20 @@
 %% Create HDR scene from light groups
 %
-% Use the script s_downloadLightGroup to get more light group EXR
-% files on your local computer. The specifications of the light group
-% EXR files on orange is based on a numeric string, we call the
-% imageID. The data is stored there in two places.  The
+%   ** Wandell lab script only **
 %
-% This script converts them to the four scenes and the metadata using this
-% script. The scenes are also stored in isethdrsensor/data
+%% Create an HDR-Scenes file for your convenience
 %
-% To create a specific scene use s_hsSceneCreate
+% Use the script s_downloadLightGroup to get light group EXR files on
+% your local computer. The specifications of the light group EXR files
+% is based on a numeric string, we call the imageID. 
+%
+% This script uses the metadata to find the specific files.  It
+% downloads the EXR files and converts them to the four scenes, saving
+% them and the metadata. The scenes are stored in your local directory
+% as a file within isethdrsensor/data with a name created as
+%
+%   lstDir = fullfile(isethdrsensorRootPath,'data');
+%   fname = fullfile(lstDir,sprintf('HDR-scenes-%s.mat',imageID));
 %
 % See also
 %   s_autoLightGroups, s_downloadLightGroup, s_hsensorRGB
