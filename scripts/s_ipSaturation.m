@@ -1,86 +1,77 @@
-%% s_ipSaturation
+%% s_hsIPSaturation
 %
-% Build scenes with different dynamic range.  Controlled.  Starting with
-% the light group scenes.
+% Illustrates the impact of the 'hdr white' parameter in ipCompute.  This
+% was important for the final rendering of high dynamic range scenes, as
+% described in the comments of ipCompute.
 %
-% Evaluates the ipHDRWhite method, called through ipCompute
-% 
-% That method moves saturated pixels in the rendering towards white.
+% See also
+%   ipCompute
 %
 
-%% Load the four scenes
+%%
+ieInit;
+%%
+oiFile = fullfile(isethdrsensorRootPath,'data','oiTunnel.mat');
+if ~exist(oiFile,"file")
+    % download the file from SDR
+    ieWebGet('resourcetype','isethdrsensor',...
+        'resource name','data/oiTunnel.mat',...
+        'download dir',isethdrsensorRootPath);
+end
+load(oiFile,'oiInput');
+%% Load the light group scenes
 
-% load('HDR-scenes-1114091636.mat');  % Green and red cars
+load('HDR-scenes-1114091636.mat');  % Green and red cars
+
 % load('HDR-scenes-1114011756.mat');  % Vans, pedestria, very red
 % load('HDR-scenes-1113094429');      % Truck bicycle, dusk
-
-% sceneWindow(scenes{4});
+% sceneWindow(scenes{4},'gamma',0.3);
 
 % These are their lights
 lgt = {'headlights','streetlights','otherlights','skymap'};
 
-%%  Figure out the peak luminance of the headlights
-headlightMax = sceneGet(scenes{1},'max luminance');
-skymapMean = sceneGet(scenes{4},'max luminance');
-skymapPRCT = sceneGet(scenes{4},'percentile luminance',[0.01 0.99]);
+% Create a 6 log unit DR with a low level of 1 cd/m2
+scene = lightGroupDynamicRangeSet(scenes,10^6,1);
+scene = piAIdenoise(scene);
+sceneWindow(scene,'gamma',0.2);
 
-% Log units of dynamic range if we just add.
-log10(headlightMax/skymapPRCT.lum(1))
+%% Compute OI with some flare.
 
-%%
-wgts = [1 0 1 1];
-scenes{4} = sceneAdjustLuminance(scenes{4},'peak',1);
-scene = sceneAdd(scenes, wgts);
-sceneWindow(scene);
+[oi,wvf] = oiCreate('wvf');
+nsides = 4;
+[aperture, params] = wvfAperture(wvf,'nsides',nsides);
+oi = oiCompute(oi, scene,'crop',true,'pixel size',3e-6,'aperture',aperture);
+oiWindow(oi,'render flag','hdr');
 
-tmp = sceneGet(scene,'percentile luminance',[0.1 0.99999])
+% Show the HDR
+oiPlot(oi,'hline illuminance',[1 629]);
+set(gca,'yscale','log');
 
-%%
+%% Set the exposure time to allow saturation.
 
-maxlum = zeros(1,numel(lgt));
-for ii=1:numel(lgt)
-    maxlum(ii) = sceneGet(scenes{ii},'max luminance');
-end
-mnlum = sceneGet(scenes{4},'mean luminance');
+sensor = sensorCreate('imx363');
+sensor = sensorSet(sensor,'match oi',oi);
+sensor = sensorSet(sensor,'exp time',1/60);
+sensor = sensorCompute(sensor,oi);
+sensorWindow(sensor,'gamma',0.5);
 
-% This is the ratio of the bright lights to the mean luminance of the
-% skymap scene.  We might add the scenes together so that some desired
-% ratio is preserved.
-maxlum(1) / mnlum
-sceneGet(scenes(1),'luminance dynamic range')
-
-
-%% Might maake a smaller version of this scene for speed/testing
-
-load('HDR-02-Brian','scene');
-oi = oiCreate;
-oi = oiCompute(oi,scene,'crop',true,'pixel size',3e-6);   % oiWindow(oi);
-
-sensor = imx490Compute(oi,'method','average','exptime',1/30);
-
-%% No call to ipHDRWhite
+%% Process without hdr white
 
 ip = ipCreate;
-ip = ipCompute(ip,sensor);
-ipWindow(ip);
+ip = ipCompute(ip,sensor,'hdr white',false);
+ipWindow(ip,'gamma',0.5);
 
-%% Calls ipHDRWhite at the end
+%% With hdr white
+ip = ipCompute(ip,sensor,'hdr white',true);
+ipWindow(ip,'gamma',0.5);
 
-saturation = sensorGet(sensor,'max digital value');
-hdrLevel = 0;
-[ip2, wgts] = ipHDRWhite(ip,'hdrlevel',hdrLevel,'saturation',saturation);
-ieNewGraphWin;
-imagesc(wgts); axis image;
+%% More blur of the HDR region
+% Skipping wgt blur parameter.  It sets only the support, not the extent.
 
-ip = ipCompute(ip,sensor,'hdrlevel',hdrLevel);
-ipWindow(ip);
+%% Change the level where we think saturation begins
 
-%%
-hdrLevel = 0.015;
-[ip3, wgts] = ipHDRWhite(ip,'hdrlevel',hdrLevel,'saturation',saturation);
-ieNewGraphWin;
-imagesc(wgts); axis image;
+mx = sensorGet(sensor,'voltage swing');
+ip = ipCompute(ip,sensor,'hdr white',true,'hdr level',mx*0.1);
+ipWindow(ip,'gamma',0.5);
 
-ip = ipCompute(ip,sensor,'hdrlevel',hdrLevel);
-ipWindow(ip);
-
+%% End
