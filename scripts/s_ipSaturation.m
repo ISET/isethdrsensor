@@ -6,11 +6,14 @@
 %
 % See also
 %   ipCompute
-%
+%   https://sdr.stanford.edu/works/8521
 
 %%
 ieInit;
-%%
+
+%% Use the tunnel scene?
+
+% When I was home, this took a very long time to download
 oiFile = fullfile(isethdrsensorRootPath,'data','oiTunnel.mat');
 if ~exist(oiFile,"file")
     % download the file from SDR
@@ -19,11 +22,12 @@ if ~exist(oiFile,"file")
         'download dir',isethdrsensorRootPath);
 end
 load(oiFile,'oiInput');
+
 %% Load the light group scenes
 
-load('HDR-scenes-1114091636.mat');  % Green and red cars
+% load('HDR-scenes-1114091636.mat');  % Green and red cars
 
-% load('HDR-scenes-1114011756.mat');  % Vans, pedestria, very red
+% load('HDR-scenes-1114011756.mat','scenes');  % Vans, pedestria, very red
 % load('HDR-scenes-1113094429');      % Truck bicycle, dusk
 % sceneWindow(scenes{4},'gamma',0.3);
 
@@ -50,7 +54,7 @@ set(gca,'yscale','log');
 %% Set the exposure time to allow saturation.
 
 sensor = sensorCreate('imx363');
-sensor = sensorSet(sensor,'match oi',oi);
+sensor = sensorSet(sensor,'match oi',oiInput);
 sensor = sensorSet(sensor,'exp time',1/60);
 sensor = sensorCompute(sensor,oi);
 sensorWindow(sensor,'gamma',0.5);
