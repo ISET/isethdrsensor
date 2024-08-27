@@ -1,7 +1,14 @@
 %% Script to download all the light groups on acorn to isethdrsensor/data
 %
-% The light group data are stored on orange as EXR files in two
-% places.  One is the metadata:
+%              ** This script is for Wandell Lab only **  
+% 
+% Others use ieWebGet() methods from the Stanford Data Repository.
+% See s_hsFig_LightGroups.mlx for an example.
+%
+%% The light group data for the wandell lab
+% 
+% The data are stored on orange as EXR files in two places.  One is
+% the metadata:
 %
 %  metaFolder = '/acorn/data/iset/isetauto/Ford/SceneMetadata';
 %
@@ -26,8 +33,7 @@
 %   '/acorn/data/iset/isetauto/Ford/SceneMetadata'
 %
 % See also
-%   s_hsScenes (isethdrsensor)
-%
+%   s_hsScenes, hsDownloadLightGroup
 
 %%  Choose a remote light gruop
 
@@ -41,6 +47,8 @@ host    = 'orange.stanford.edu';
 % A list of the scenes I have looked at
 lst = hsSceneDescriptions;
 
+% But you could use a list of imageID values that you curate by hand.
+%
 %%
 for ss = 1:numel(lst)
     imageID = lst(ss).id;

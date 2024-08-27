@@ -72,6 +72,13 @@ switch networkName
         error('Trained network name not known:  %s',networkName);
 end
 
+if ~exist(model_path,"file")
+    remoteFile = erase(model_path,[isethdrsensorRootPath,'/']);
+    ieWebGet('resourcetype','isethdrsensor',...
+        'resource name',remoteFile,...
+        'download dir',isethdrsensorRootPath);
+end
+
 % Call the Python function for demosaicing
 result = NNDemosaic.demosaic(model_path, exrInput, exrOutput);
 

@@ -1,6 +1,6 @@
 %% Analyzing the OVT 3-capture sensor (Day)
 %
-% We compare the rendering of a nighttime HDR scene with a standard
+% We compare the rendering of a daytime HDR scene with a standard
 % automotive RGB sensor and a similar sensor, but with the split pixel
 % design, as proposed by Omnivision.
 %

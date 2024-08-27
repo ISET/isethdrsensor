@@ -1,8 +1,10 @@
-%% TODO
+%% Scratch script
 %
-% Vary the parameters in the split pixel design
+% Just typing and looking.  Nothing for most to see here.
+%
+% Vary the parameters in the split pixel design.
+%
 % Try different scenes
-% Update from s_hsSensorCompare
 %
 % Not started yet.  Will shift the split pixel parameters around to
 % see which relative gain is best.
@@ -124,6 +126,8 @@ end
 
 %% Can we set the well capacity to be equal in all?
 
+% We don't really talk about well capacity enough in the paper.
+
 % We can set conversion gain and voltage swing
 %
 % This implies the well capacity.
@@ -147,11 +151,3 @@ for ii=1:4
 end
 
 %% END
-
-
-
-%%
-
-  
-
-%}
