@@ -126,6 +126,8 @@ end
 
 %% Can we set the well capacity to be equal in all?
 
+% We don't really talk about well capacity enough in the paper.
+
 % We can set conversion gain and voltage swing
 %
 % This implies the well capacity.

@@ -1,7 +1,7 @@
 %% Apply geometric distortion
 %
-% We illustrate using rtGeometry to apply a geometric distortion to a
-% scene.
+% The script illustrates how to use rtGeometry to apply a geometric
+% distortion to a scene.
 %
 % Conceptually, we first blur the scene with a wavefront
 % (shift-invariant) optics and relative illumination.  We then apply
@@ -15,7 +15,7 @@
 % The script uses both zmWideAngle and zemaxFishEye
 %
 % See also
-%
+%  
 
 %%
 ieInit
