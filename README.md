@@ -1,5 +1,5 @@
 # ISETHDRsensor
-
+![Introduction Figure](figures/OpenFig.jpg)
 This repository contains functions and scripts designed to evaluate High Dynamic Range (HDR) imaging sensor architectures, with a focus on nighttime driving scenes. The tools provided here are for researchers and engineers working on HDR imaging systems, particularly in automotive applications.
 
 ### [`Arxiv`](https://arxiv.org/pdf/2408.12048) ISETHDR: A Physics-based Synthetic Radiance Dataset for High Dynamic Range Driving Scenes  
