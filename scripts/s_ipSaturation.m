@@ -40,7 +40,8 @@ if ~exist(oiFile,"file")
     % Not found.  download the file from SDR
     ieWebGet('deposit name','isethdrsensor-paper',...
         'deposit file',fullfile('data',fname),...
-        'downloaddir',fullfile(isethdrsensorRootPath,'data'));
+        'downloaddir',fullfile(isethdrsensorRootPath,'data'), ...
+        'unzip',false);
 end
 load(fname,'scenes');
 
