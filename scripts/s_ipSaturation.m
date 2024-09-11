@@ -1,4 +1,4 @@
-%% s_hsIPSaturation
+%% s_ipSaturation
 %
 % Illustrates the impact of the 'hdr white' parameter in ipCompute.  This
 % was important for the final rendering of high dynamic range scenes, as
@@ -38,8 +38,8 @@ fname = 'HDR-scenes-1113094429.mat';
 oiFile = fullfile(isethdrsensorRootPath,'data',fname);
 if ~exist(oiFile,"file")
     % Not found.  download the file from SDR
-    ieWebGet('resourcetype','isethdrsensor',...
-        'resource name',fullfile('data',fname),...
+    ieWebGet('desposit type','isethdrsensor',...
+        'deposit name',fullfile('data',fname),...
         'download dir',isethdrsensorRootPath);
 end
 load(fname,'scenes');
