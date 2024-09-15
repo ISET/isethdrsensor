@@ -15,14 +15,20 @@ The code in this repository relies on the following tools:
 ```
 git clone https://github.com/ISET/isetcam
 ```
+- [ISET3D-tiny](https://github.com/ISET/iset3d-tiny): A Matlab toolbox for rendering scenes.
+```
+git clone https://github.com/ISET/iset3d-tiny
+```
+
 To run the neural network for denoising and demosaicing, you will also need to have a Matlab Python environment.  See the instructions for creating a Python environment on the [ISETCam wiki pages]()
 
 ### Python libraries for RGBW rendering
 
-To run the demosaicing code, we need to [install a Python environment within Matlab](https://github.com/ISET/isetcam/wiki/Related-software), and then add in the Python libraries specified in the file (isethdrsensor/utility/python/requirements.txt).  These libraries are used by the neural network code that performs the demosaicing and denoising here.
+To run the demosaicing code, we need to install a Python environment within Matlab](https://github.com/ISET/isetcam/wiki/Related-software), and then add in the Python libraries specified in the file (isethdrsensor/utility/python/requirements.txt).  These libraries are used by the neural network code that performs the demosaicing and denoising here.
 
 To install the requirements, you can use
 ```
+cd isethdrsensor/utility/pyton
 pip install -r requirements.txt
 ```
 ## Overview
