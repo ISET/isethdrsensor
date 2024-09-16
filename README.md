@@ -28,7 +28,7 @@ To run the demosaicing code, we need to install a Python environment within Matl
 
 To install the requirements, you can use
 ```
-cd isethdrsensor/utility/pyton
+cd isethdrsensor/utility/python
 pip install -r requirements.txt
 ```
 ## Overview
