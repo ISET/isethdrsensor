@@ -67,9 +67,7 @@ The link to the complete dataset: https://searchworks.stanford.edu/view/zg292rq7
 
 ### Data Organization
 
-All rendered scenes are accompanied by metadata files stored in a separate folder. Each metadata set includes multiple `.exr` layers and a corresponding `.mat` file, all sharing the same numeric prefix (e.g., `1112153442`). This prefix serves as the unique identifier for each scene.
-
-Each scene includes several `.exr` files representing different light contributions and instance information:
+All rendered scenes are accompanied by metadata files stored in a separate folder. Each scene includes multiple `.exr` layers and a corresponding `.mat` file, all sharing the same numeric prefix (e.g., `1112153442`). This prefix serves as the unique identifier for each scene.
 
 - `*_headlights.exr`: Light contribution from headlights
 - `*_otherlights.exr`: Contributions from nearby cars or ambient sources
@@ -77,7 +75,7 @@ Each scene includes several `.exr` files representing different light contributi
 - `*_skymap.exr`: Sky and global illumination
 - `*_instanceID.exr`: Encodes object instance IDs for segmentation
 
-Each scene also has an associated `.mat` file that stores metadata such as depth map, segmentation map and a list of object names.
+The associated `.mat` file stores metadata such as depth map, segmentation map and a list of object names.
 
 ## Contributing
 
