@@ -69,7 +69,7 @@ The link to the complete dataset: https://searchworks.stanford.edu/view/zg292rq7
 
 All rendered scenes are accompanied by metadata files stored in a separate folder. Each metadata set includes multiple `.exr` layers and a corresponding `.mat` file, all sharing the same numeric prefix (e.g., `1112153442`). This prefix serves as the unique identifier for each scene.
 
-Each scene may include several `.exr` files representing different light contributions and instance information:
+Each scene includes several `.exr` files representing different light contributions and instance information:
 
 - `*_headlights.exr`: Light contribution from headlights
 - `*_otherlights.exr`: Contributions from nearby cars or ambient sources
