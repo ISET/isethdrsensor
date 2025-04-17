@@ -62,6 +62,23 @@ The scripts in this repository were used to generate most of the figures in the 
 The data required for the /figures and /scripts directories is stored in the [Stanford Digital Repository (SDR)](https://searchworks.stanford.edu/view/bt316kj3589) Feel free to check it in your web browser.
 
 The corresponding data from SDR will be automatically pulled for the scripts. A data folder will be created for the scene data, and a networks folder will be created for the pretrained ONNX network used for demosaicing and denoising, as described in the Experiments/RGBW Sensor section of the paper.
+
+The link to the complete dataset: https://searchworks.stanford.edu/view/zg292rq7608
+
+### Data Organization
+
+All rendered scenes are accompanied by metadata files stored in a separate folder. Each metadata set includes multiple `.exr` layers and a corresponding `.mat` file, all sharing the same numeric prefix (e.g., `1112153442`). This prefix serves as the unique identifier for each scene.
+
+Each scene may include several `.exr` files representing different light contributions and instance information:
+
+- `*_headlights.exr`: Light contribution from headlights
+- `*_otherlights.exr`: Contributions from nearby cars or ambient sources
+- `*_streetlights.exr`: Light from fixed streetlights
+- `*_skymap.exr`: Sky and global illumination
+- `*_instanceID.exr`: Encodes object instance IDs for segmentation
+
+Each scene also has an associated `.mat` file that stores metadata such as depth map, segmentation map and a list of object names.
+
 ## Contributing
 
 Contributions are welcome! If you have suggestions for improvements or new features, please feel free to open an issue or submit a pull request.
