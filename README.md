@@ -42,7 +42,13 @@ The scripts in this repository utilize HDR driving scenes to simulate the respon
 1. **RGBW Sensor**: A sensor architecture that includes red, green, blue, and white pixels to capture a broader range of brightness levels.
 2. **Omnivision 3-Capture Sensor**: A sensor designed by Omnivision that uses multiple captures to extend dynamic range.
 
-A second contribution is a set of scenes that are rendered into light groups (see the paper for details).  A light group can be used to create an ISETCam scene spectral radiance, either for day, dusk or night conditions. To browse an overview of the light groups we use fiftyone.  It can be installed and then run this way
+A second contribution is a set of scenes that are rendered into light groups (see the paper for details).  A light group can be used to create an ISETCam scene spectral radiance, either for day, dusk or night conditions. 
+
+The light group data sets, which include labeled data, are shared freely through the Stanford Digital Repository.  The data organization is described below.
+
+### At Stanford
+
+In the lab, to browse the light groups we use fiftyone.  It can be installed and then run this way
 ```   
 pip install fiftyone
 ```
@@ -62,7 +68,7 @@ To run the simulations, ensure that you have the necessary dependencies installe
 
 The scripts in this repository were used to generate most of the figures in the paper titled "ISETHDR: A Physically Accurate Synthetic Radiance Dataset for High Dynamic Range Driving Scenes," currently in preparation. You can modify the parameters in the scripts to explore different scenarios or reproduce the figures.
 
-## Data
+## Stanford Digital Repository Data
 The data required for the /figures and /scripts directories is stored in the [Stanford Digital Repository (SDR)](https://searchworks.stanford.edu/view/bt316kj3589) Feel free to check it in your web browser.
 
 The corresponding data from SDR will be automatically pulled for the scripts. A data folder will be created for the scene data, and a networks folder will be created for the pretrained ONNX network used for demosaicing and denoising, as described in the Experiments/RGBW Sensor section of the paper.
