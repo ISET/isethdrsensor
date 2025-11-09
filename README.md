@@ -77,6 +77,36 @@ The corresponding data from SDR will be automatically pulled for the scripts. A 
 
 The link to the complete dataset: https://searchworks.stanford.edu/view/zg292rq7608
 
+An example of a script that downloads the data from the repository is s_hsSkyBrightness.mlx.  This is the key part that uses ieWebGet() to download the files.
+
+```
+ieInit;    % Generic ISET initialization
+
+imageID = '1112201236'; % - Good one to download
+lgt = {'headlights','streetlights','otherlights','skymap'};
+
+% Stick it there, which is .gitignored.
+destPath = fullfile(isethdrsensorRootPath,'data',imageID);
+
+% Download each one of the files from the light grup
+scenes = cell(numel(lgt,1));
+for ll = 1:numel(lgt)
+    thisFile = sprintf('%s_%s.exr',imageID,lgt{ll});
+    destFile = fullfile(destPath,thisFile);
+
+    % Only get it if you didn't already get it!  I forget all the time.
+    if ~exist(destFile,"file")
+        ieWebGet('deposit name','isethdrsensor-paper',...
+            'deposit file',fullfile('data',imageID,thisFile),...
+            'download dir',fullfile(isethdrsensorRootPath,'data',imageID),...
+            'unzip',false);
+    end
+
+    % Read it into a 'scene'.  It is stored as an EXR file.
+    scenes{ll} = piEXR2ISET(destFile);
+end
+```
+
 ### Data Organization
 
 All rendered scenes are accompanied by metadata files stored in a separate folder. Each scene includes multiple `.exr` layers and a corresponding `.mat` file, all sharing the same numeric prefix (e.g., `1112153442`). This prefix serves as the unique identifier for each scene.
